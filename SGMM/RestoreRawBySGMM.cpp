@@ -286,7 +286,7 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 
 	double sgmmbi_l[128];
 	double P[128];
-	for (int i = 0; i < block_data[block_index].bin_num_; i++) {
+	for (int i = 0; i <128; i++) {
 		sgmmbi_l[i] = 0.0;
 		P[i] = 0.0;
 	}
@@ -300,34 +300,44 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 
 		int gauss_count = block_data[block_index].bins_[real_index].gauss_count_;
 		sgmmbi_l[real_index] = CalcSGMM(local_pos, gauss_count, block_data, block_index, real_index, n);
+	    //if (block_index == 0 && real_index == 100)printf("---%d %f %d\n",real_index,sgmmbi_l[real_index],bin_count);
 	}
 
+	//for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
+	//	if (sgmmbi_l[bin_count] == 0 || all_block_integrations[block_index].integration_value[bin_count] == 0) {
+	//		P[bin_count] = 0.0;
+	//		if (block_index == 0 && bin_count == 100)printf("+++%d %f-%f\n",bin_count, sgmmbi_l[bin_count], all_block_integrations[block_index].integration_value[bin_count]);
+	//	}
+	//	else {
+	//		P[bin_count] = sgmmbi_l[bin_count] * (block_data[block_index].bins_[bin_count].probability_ / all_block_integrations[block_index].integration_value[bin_count]); //
+	//		if(block_index ==0 && bin_count == 100)printf("&&&%f ", block_data[block_index].bins_[bin_count].probability_);
+	//	}
+	//	//if (block_index == 0 && bin_count == 100)printf("asdf\n");
+	//}
+
+	//////////////////////////////////////////////////////////////////////////
 	for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
-		if (sgmmbi_l[bin_count] == 0 || all_block_integrations[block_index].integration_value[bin_count] == 0) {
-			P[bin_count] = 0.0;
-			if(block_index ==0)
-				printf("%f-%f", sgmmbi_l[bin_count], all_block_integrations[block_index].integration_value[bin_count]);
+		int real_index = block_data[block_index].bin_indexs_[bin_count];
+		if (sgmmbi_l[real_index] == 0 || all_block_integrations[block_index].integration_value[real_index] == 0) {
+			P[real_index] = 0.0;
+			//if (block_index == 0 && bin_count == 100)printf("+++%d %f-%f\n", bin_count, sgmmbi_l[real_index], all_block_integrations[block_index].integration_value[real_index]);
 		}
 		else {
-			P[bin_count] = sgmmbi_l[bin_count] * (block_data[block_index].bins_[bin_count].probability_ / all_block_integrations[block_index].integration_value[bin_count]); //
-			//printf("%f ", block_data[block_index].bins_[bin_count].probability_);
+			P[real_index] = sgmmbi_l[real_index] * (block_data[block_index].bins_[real_index].probability_ / all_block_integrations[block_index].integration_value[real_index]); //
+			//if (block_index == 0 && bin_count == 100)printf("&&&%f ", block_data[block_index].bins_[bin_count].probability_);
 		}
-		if(block_index == 0)printf("\n");
+		//if (block_index == 0 && bin_count == 100)printf("asdf\n");
 	}
-	//if (block_index == 0)
-	//{
-	//	for (int i = 0; i < block_data[block_index].bin_num_; i++) {
-	//		printf("%f ", P[i]);
-	//	}
-	//	printf("\n");
-	//}
+	//////////////////////////////////////////////////////////////////////////
 	//
 	double sum_p = 0.0;
 	for (int i = 0; i < block_data[block_index].bin_num_; i++) {
-		sum_p += P[i];
+		int real_index = block_data[block_index].bin_indexs_[i];
+		sum_p += P[real_index];
 	}
 	for (int i = 0; i < block_data[block_index].bin_num_; i++) {
-		P[i] /= sum_p;
+		int real_index = block_data[block_index].bin_indexs_[i];
+		P[real_index] /= sum_p;
 	}
 
 
@@ -349,8 +359,9 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 	else if (sample_choice == 2) { //
 		double max_p = P[0];
 		for (int i = 1; i < block_data[block_index].bin_num_; i++) {
-			if (P[i] > max_p) {
-				max_p = P[i];
+			int ri = block_data[block_index].bin_indexs_[i];
+			if (P[ri] > max_p) {
+				max_p = P[ri];
 				final_bin_count = i;
 			}
 		}

@@ -127,6 +127,9 @@ int txt2binarysgmm(int argc,char ** argv)
 				std::cout << bin_num << std::endl;
 			}
 			for (int k = 0; k < bin_num; k++) {
+				if (block_index == 0) {
+					std::cout << "-----------------GAUSS :" << k << std::endl;
+				}
 				int real_index = 0;
 				float probability = 0.0;
 				int gauss_count = 0;
@@ -138,8 +141,14 @@ int txt2binarysgmm(int argc,char ** argv)
 				block_data[block_index].bin_indexs_[k] = real_index;
 				block_data[block_index].bins_[real_index].probability_ = probability;
 				block_data[block_index].bins_[real_index].gauss_count_ = gauss_count;
+				if (block_index == 0) {
+					std::cout << "bin index:" << real_index << std::endl;
+					std::cout << "probability:" << probability << std::endl;
+					std::cout << "gauss count:" << gauss_count << std::endl;
+				}
 				//read information for every gaussian component
 				for (int p = 0; p < gauss_count; p++) {
+
 					block_data[block_index].gauss_count_++;  // test only
 					float weight = 0.0;
 					float mean[3] = { 0.0 ,0.0, 0.0 };
@@ -147,7 +156,13 @@ int txt2binarysgmm(int argc,char ** argv)
 					sgmm_input >> weight;
 					sgmm_input >> mean[0] >> mean[1] >> mean[2];
 					sgmm_input >> covariance[0] >> covariance[1] >> covariance[2] >> covariance[3] >> covariance[4] >> covariance[5];
-
+					if (block_index == 0) {
+						std::cout << "GAUSS COUNT:" << p << std::endl;
+						std::cout <<"weight:"<< weight << std::endl;
+						std::cout <<"mean:"<< mean[0] << " " << mean[1] << " " << mean[2] << std::endl;
+						std::cout << "covariance:"<<covariance[0] << " " << covariance[1] << " " << covariance[2] << " " << covariance[3] <<
+							covariance[4] << " " << covariance[5] << std::endl;
+					}
 					block_data[block_index].bins_[real_index].gausses_[p].weight_ = weight;
 					for (int loop = 0; loop < 3; loop++) {
 						block_data[block_index].bins_[real_index].gausses_[p].mean_[loop] = mean[loop];
