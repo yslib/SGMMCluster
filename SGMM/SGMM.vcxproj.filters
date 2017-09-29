@@ -9,7 +9,6 @@
     <ClCompile Include="txt2binarySGMMCluster.cpp" />
     <ClCompile Include="RealTimeVolumeRendering\interaction.cpp" />
     <ClCompile Include="RealTimeVolumeRendering\realtimevolumerendering.cpp" />
-    <ClCompile Include="testcasegenerate.cpp" />
     <ClCompile Include="compressionratio.cpp" />
     <ClCompile Include="rmse.cpp" />
     <ClCompile Include="txt2binarySGMM.cpp" />
@@ -19,6 +18,7 @@
     <ClCompile Include="CudaDeviceQuery.cpp" />
     <ClCompile Include="draw_bounding_box.cpp" />
     <ClCompile Include="clip_raw_data.cpp" />
+    <ClCompile Include="test_case_generate.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commands.h" />

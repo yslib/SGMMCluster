@@ -43,7 +43,7 @@
     </CudaCompile>
     <ClCompile Include="rmse.cpp" />
     <ClCompile Include="stuctruesfunctions.cpp" />
-    <ClCompile Include="testcasegenerate.cpp" />
+    <ClCompile Include="test_case_generate.cpp" />
     <ClCompile Include="pythontrainingmodule.cpp" />
     <ClCompile Include="txt2binaryGMM.cpp" />
     <ClCompile Include="txt2binarySGMM.cpp" />

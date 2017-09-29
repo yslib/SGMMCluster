@@ -47,7 +47,7 @@ int main(int argc,char ** argv)
 	MenuConfig("11", "calculating the compression ratio.", compress_ratio);
 	MenuConfig("12", "calculating the rmse between two volume data.", rmse);
 	MenuConfig("13", "generate test case", test_case_generate);
-	MenuConfig("14", "draw bounding box for .raw file\n",draw_bounding_box);
+	MenuConfig("14", "draw bounding box for .raw file",draw_bounding_box);
 
 	//test command
 	MenuConfig("t", "test", test);
