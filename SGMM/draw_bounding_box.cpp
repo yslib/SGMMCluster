@@ -77,6 +77,7 @@ int draw_bounding_box(int argc, char ** argv) {
 
 	std::string disk_address;
 	std::string data_source;
+	std::string data_target;
 	std::string aabb_file;
 	int width, depth, height;
 
@@ -86,6 +87,8 @@ int draw_bounding_box(int argc, char ** argv) {
 	std::cin >> disk_address;
 	std::cout << "input data name\n";
 	std::cin >> data_source;
+	std::cout << "input target name\n";
+	std::cin >> data_target;
 	std::cout << "input aabb file\n";
 	std::cin >> aabb_file;
 	std::cout << "input width depth height(3)\n";
@@ -105,18 +108,18 @@ int draw_bounding_box(int argc, char ** argv) {
 	}
 
 	//Writing new volume data
-	std::ofstream new_raw_file(disk_address + data_source+"_AABB" + ".raw");
+	std::ofstream new_raw_file(disk_address + data_target+"_AABB" + ".raw");
 	if (new_raw_file.is_open() == false) {
 		std::cout << "can not create .raw file\n";
 		exit(1);
 	}
-	new_raw_file.write((const char*)(volume_data), width*depth*height);
+	new_raw_file.write((const char *)volume_data, width*depth*height);
 	std::cout << "Drawing bounding box finished\n";
 	delete[] volume_data;
 
 	//Creating .vifo file for new volume data
 	std::cout << "Creating .vifo file for _AABB.raw file\n";
-	create_vifo_file(disk_address, data_source + "_AABB", width, depth, height);
+	create_vifo_file(disk_address, data_target + "_AABB", width, depth, height);
 	std::cin.get();
 	return 0;
 }

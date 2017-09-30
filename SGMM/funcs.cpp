@@ -38,7 +38,7 @@ bool create_vifo_file(const std::string & address, const std::string & file_name
 	}
 	out_vifo_file << width << " " << depth << " " << height << std::endl;	//size of the volume data
 	out_vifo_file << "1 1 1" << std::endl;
-	out_vifo_file << file_name << ".vifo" << std::endl;		//path of the .raw file(assuming both are the same directory)
+	out_vifo_file << file_name << ".raw" << std::endl;		//path of the .raw file(assuming both are the same directory)
 	out_vifo_file.close();
 	return true;
 }
