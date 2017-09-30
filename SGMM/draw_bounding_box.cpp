@@ -108,12 +108,12 @@ int draw_bounding_box(int argc, char ** argv) {
 	}
 
 	//Writing new volume data
-	std::ofstream new_raw_file(disk_address + data_target+"_AABB" + ".raw");
+	std::ofstream new_raw_file(disk_address + data_target+"_AABB" + ".raw",std::ios::binary);
 	if (new_raw_file.is_open() == false) {
 		std::cout << "can not create .raw file\n";
 		exit(1);
 	}
-	new_raw_file.write((const char *)volume_data, width*depth*height);
+	new_raw_file.write((const char *)volume_data, width*depth*height*sizeof(voxel_type));
 	std::cout << "Drawing bounding box finished\n";
 	delete[] volume_data;
 

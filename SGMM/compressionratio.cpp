@@ -2,39 +2,29 @@
 #include <fstream>
 #include <string>
 #include <cstdio>
+#include "funcs.h"
 
-int get_file_size(const std::string & path) {
-	std::ifstream in_file(path, std::ios::binary);
-	int size;
-	if (in_file.is_open() == true) {
-		in_file.seekg(0, std::ios::end);
-		size = static_cast<int>(in_file.tellg());
-	}
-	else {
-		size = 0;
-	}
-	return size;
-}
-int size_of_source_file(const std::string & path,const std::string & name) {
+
+std::size_t size_of_source_file(const std::string & path,const std::string & name) {
 	std::string source_file = path + name + ".raw";
 	return get_file_size(source_file);
 }
-int size_of_sgmm_clusters(const std::string & path,const std::string& name) {
+std::size_t size_of_sgmm_clusters(const std::string & path,const std::string& name) {
 	std::string sgmm_file = path+ name + "_SGMM_Cluster_Result.sgmm";
-	int size1 = get_file_size(sgmm_file);
+	std::size_t size1 = get_file_size(sgmm_file);
 	std::string integrations_file = path + name + "_integrations_sgmm_cluster";
-	int size2 = get_file_size(integrations_file);
+	std::size_t size2 = get_file_size(integrations_file);
 	//std::cout << size1 << " " << size2 << std::endl;
 	return size1 + size2;
 }
-int size_of_sgmm(const std::string & path,const std::string & name) {
+std::size_t size_of_sgmm(const std::string & path,const std::string & name) {
 	std::string sgmm_file = path + name + "_SGMM_Result.sgmm";
-	int size1 = get_file_size(sgmm_file);
+	std::size_t size1 = get_file_size(sgmm_file);
 	std::string integration_file = path + name + "_integrations_sgmm";
-	int size2 = get_file_size(integration_file);
+	std::size_t size2 = get_file_size(integration_file);
 	return size1 + size2;
 }
-int size_of_gmm(const std::string & path,const std::string & name) {
+std::size_t size_of_gmm(const std::string & path,const std::string & name) {
 	std::string gmm_file = path + name + "_GMM_Result.gmm";
 	return get_file_size(gmm_file);
 }

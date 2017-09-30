@@ -108,3 +108,16 @@ bool create_AABB_file(const std::string & path, const std::string & file_name, c
 	}
 	return true;
 }
+
+std::size_t get_file_size(const std::string & path) {
+	std::ifstream in_file(path, std::ios::binary);
+	std::size_t size;
+	if (in_file.is_open() == true) {
+		in_file.seekg(0, std::ios::end);
+		size = static_cast<std::size_t>(in_file.tellg());
+	}
+	else {
+		size = 0;
+	}
+	return size;
+}

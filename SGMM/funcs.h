@@ -110,7 +110,7 @@ struct sgmmClusterIntegrations {
 	float integration_value[MAX_CLUSTER_NUM];
 };
 
-
+std::size_t get_file_size(const std::string & path);
 
 std::string int_to_string(int i);
 
