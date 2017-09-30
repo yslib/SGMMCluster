@@ -6,7 +6,7 @@
 #include <cassert>
 #include <exception>
 #include "commands.h"
-#include "structuresfunctions.h"
+#include "funcs.h"
 
 #define LEAF_CHECK
 #define LEAF_ID_CONTINUOUS_CHECK

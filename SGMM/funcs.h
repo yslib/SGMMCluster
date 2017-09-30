@@ -25,6 +25,9 @@ using voxel_type = unsigned char;
 using pos_type = int;
 using id_type = int;
 
+
+enum class data_type { BLOCL_GMM, SGMM, SGMM_CLUSTER };
+
 struct point3d {
 	pos_type x;
 	pos_type y;
@@ -37,6 +40,10 @@ struct point3d {
 	friend std::ostream & operator<<(std::ostream & os, const point3d & p) {
 		os << p.x << " " << p.y << " " << p.z;
 		return os;
+	}
+	friend std::istream & operator>>(std::istream & is, point3d & p) {
+		is >> p.x >> p.y >> p.z;
+		return is;
 	}
 	bool operator<(const point3d & p)const {
 		return (x < p.x&&y < p.y&&z < p.z);
@@ -60,7 +67,7 @@ struct point3d {
 };
 
 struct AABB{
-	AABB(const point3d & p1, const point3d & p2) :min_point{ p1 }, max_point{ p2 } {}
+	AABB(const point3d & p1 = point3d(), const point3d & p2 = point3d()) :min_point{ p1 }, max_point{ p2 } {}
 	point3d min_point;
 	point3d max_point;
 };
@@ -105,10 +112,16 @@ struct sgmmClusterIntegrations {
 
 
 
-
 std::string int_to_string(int i);
+
 bool read_raw_file(const std::string & file_name, voxel_type * vol, size_t width, size_t depth, size_t height);
+
 bool create_vifo_file(const std::string & address,const std::string & file_name, int width, int depth, int height);
+
 std::vector<AABB> create_regular_boundingbox(int width,int depth,int height,int block_width,int block_depth,int block_height);
+
+bool create_AABB_file(const std::string & path, const std::string & file_name, const std::vector<AABB> & aabbs);
+
+std::vector<AABB> read_AABB_from_file(const std::string path, const std::string & file_name);
 
 #endif

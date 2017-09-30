@@ -13,12 +13,12 @@
     <ClCompile Include="rmse.cpp" />
     <ClCompile Include="txt2binarySGMM.cpp" />
     <ClCompile Include="txt2binaryGMM.cpp" />
-    <ClCompile Include="stuctruesfunctions.cpp" />
     <ClCompile Include="pythontrainingmodule.cpp" />
     <ClCompile Include="CudaDeviceQuery.cpp" />
     <ClCompile Include="draw_bounding_box.cpp" />
     <ClCompile Include="clip_raw_data.cpp" />
     <ClCompile Include="test_case_generate.cpp" />
+    <ClCompile Include="funcs.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commands.h" />
@@ -29,10 +29,10 @@
     <ClInclude Include="RealTimeVolumeRendering\helper_math.h" />
     <ClInclude Include="RealTimeVolumeRendering\interaction.h" />
     <ClInclude Include="RealTimeVolumeRendering\realtimerendering.h" />
-    <ClInclude Include="structuresfunctions.h" />
     <ClInclude Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cuh" />
     <ClInclude Include="helper_cuda.h" />
     <ClInclude Include="helper_string.h" />
+    <ClInclude Include="funcs.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cu" />

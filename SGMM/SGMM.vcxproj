@@ -42,7 +42,7 @@
       <FileType>Document</FileType>
     </CudaCompile>
     <ClCompile Include="rmse.cpp" />
-    <ClCompile Include="stuctruesfunctions.cpp" />
+    <ClCompile Include="funcs.cpp" />
     <ClCompile Include="test_case_generate.cpp" />
     <ClCompile Include="pythontrainingmodule.cpp" />
     <ClCompile Include="txt2binaryGMM.cpp" />
@@ -60,7 +60,7 @@
     <ClInclude Include="RealTimeVolumeRendering\interaction.h" />
     <ClInclude Include="RealTimeVolumeRendering\realtimerendering.h" />
     <ClInclude Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cuh" />
-    <ClInclude Include="structuresfunctions.h" />
+    <ClInclude Include="funcs.h" />
     <ClInclude Include="tailor.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
@@ -114,7 +114,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\Users\ysl\Code\sgmmcluster\SGMM\opengllib\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\ysl\Code\SGMM\SGMM\opengllib\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -132,7 +132,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32.lib;glut32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\ysl\Code\sgmmcluster\SGMM\opengllib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\ysl\Code\SGMM\SGMM\opengllib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>echo copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"
@@ -172,7 +172,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
       <OptimizeReferences>true</OptimizeReferences>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>cudart.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;glew32.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\ysl\Code\SGMM\SGMM\opengllib\lib;C:\Users\ysl\Anaconda2\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Users\ysl\Code\SGMM\SGMM\opengllib\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalOptions>/SAFESEH:NO %(AdditionalOptions)</AdditionalOptions>
     </Link>
     <PostBuildEvent>

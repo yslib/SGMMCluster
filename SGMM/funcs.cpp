@@ -1,7 +1,7 @@
-#include "structuresfunctions.h"
+#include "funcs.h"
 
 //
-//convert int to string if int is valid
+//Convert int to string if int is valid
 //
 std::string int_to_string(int i) {
 	std::stringstream s_temp;
@@ -11,7 +11,7 @@ std::string int_to_string(int i) {
 	return s;
 }
 //
-//read raw file by byte
+//Read raw file by byte
 //
 bool read_raw_file(const std::string & file_name, voxel_type * vol, size_t width, size_t depth, size_t height) {
 	std::ifstream in_file(file_name, std::ios::binary);
@@ -20,18 +20,18 @@ bool read_raw_file(const std::string & file_name, voxel_type * vol, size_t width
 		return false;
 	}
 	if (!in_file.read((char *)vol, width*depth*height * sizeof(voxel_type))) {
-		std::cout << "Reading .raw file failed."<< std::endl;
+		std::cout << "Reading .raw file failed." << std::endl;
 		throw std::out_of_range("Reading .raw file error\n");
 	}
 	return true;
 }
 
 //
-//create a .vifo file 
+//Create a .vifo file 
 //
-bool create_vifo_file(const std::string & address,const std::string & file_name, int width, int depth, int height)
+bool create_vifo_file(const std::string & address, const std::string & file_name, int width, int depth, int height)
 {
-	std::ofstream out_vifo_file(address+file_name + ".vifo");
+	std::ofstream out_vifo_file(address + file_name + ".vifo");
 	if (out_vifo_file.is_open() == false) {
 		std::cout << "Creating .vifo file failed\n";
 		return false;
@@ -43,16 +43,31 @@ bool create_vifo_file(const std::string & address,const std::string & file_name,
 	return true;
 }
 
-std::vector<AABB> read_AABB_from_file(const std::string & address,const std::string & file_name) {
-	return std::vector<AABB>();
+std::vector<AABB> read_AABB_from_file(const std::string path, const std::string & file_name) {
+	std::vector<AABB> aabbs;
+	std::ifstream bounding_box_file(path + file_name);
+	if (bounding_box_file.is_open() == false) {
+		std::cout << "can not open bounding box file\n";
+		exit(1);
+	}
+	int block_num;
+	bounding_box_file >> block_num;
+	AABB aabb;
+	for (int i = 0; i < block_num; i++) {
+		//bounding_box_file >> aabb.max_point.x >> aabb.min_point.y >> aabb.min_point.z >> aabb.max_point.x >> aabb.max_point.y >> aabb.max_point.z;
+		bounding_box_file >> aabb.min_point >> aabb.max_point;
+		while (bounding_box_file.get() != '\n')continue;		//empty the rest of current line
+		aabbs.push_back(aabb);
+	}
+	return aabbs;
 }
 
 std::vector<AABB> create_regular_boundingbox(
-	int width, 
+	int width,
 	int depth,
 	int height,
-	int block_width, 
-	int block_depth, 
+	int block_width,
+	int block_depth,
 	int block_height)
 {
 	assert(width%block_width == 0);
@@ -77,4 +92,19 @@ std::vector<AABB> create_regular_boundingbox(
 		}
 	}
 	return bounding_boxes;
+}
+
+//
+bool create_AABB_file(const std::string & path, const std::string & file_name, const std::vector<AABB>& aabbs)
+{
+	std::ofstream aabb_file(path + file_name);
+	if (aabb_file.is_open() == false) {
+		std::cout << "Creating aabb file failed\n";
+		return false;
+	}
+	aabb_file << aabbs.size() << std::endl;
+	for (const AABB & aabb : aabbs) {
+		aabb_file << aabb.min_point << " " << aabb.max_point << std::endl;
+	}
+	return true;
 }

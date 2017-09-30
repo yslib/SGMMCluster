@@ -33,4 +33,6 @@ int train_block_gmm(int argc, char **argv);
 
 int draw_bounding_box(int argc, char ** argv);
 
+int create_AABB_file(int argc, char ** argv);
+
 #endif/*_COMMADS_H_*/

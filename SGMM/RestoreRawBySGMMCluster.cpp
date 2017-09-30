@@ -14,7 +14,7 @@
 #include "device_launch_parameters.h"
 #include <cassert>
 
-#include "structuresfunctions.h"
+#include "funcs.h"
 
 #define M_PI 3.14159265358979323846
 

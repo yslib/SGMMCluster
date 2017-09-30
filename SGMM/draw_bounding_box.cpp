@@ -1,8 +1,9 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-#include "structuresfunctions.h"
+#include "funcs.h"
 
+//Draw a bounding box for a given min-max coordinate.
 void draw_bounding_box(voxel_type * voxel, const point3d & min_point,const point3d & max_point,int width,int depth,int height) {
 	auto xmin = min_point.x;
 	auto ymin = min_point.y;
@@ -47,69 +48,75 @@ void draw_bounding_box(voxel_type * voxel, const point3d & min_point,const point
 		}
 	}
 }
+int create_AABB_file(int argc, char ** argv) {
+	std::string disk_address;
+	std::string aabb_file;
+	int width;
+	int depth;
+	int height;
+	int side;
 
+	std::cout << "----------CREATE AABB FILE MODULE------------\n";
+	std::cout << "input data address\n";
+	std::cin >> disk_address;
+	std::cout << "input aabb file\n";
+	std::cin >> aabb_file;
+	std::cout << "input width depth height (3)\n";
+	std::cin >> width >> depth >> height >> side;
+
+	if (create_AABB_file(disk_address, aabb_file, create_regular_boundingbox(width, depth, height, side, side, side)) == false) {
+		std::cout << "Creating aabb file for sgmm and block gmm failed\n";
+		exit(1);
+	}
+	std::cin.get();
+	return 0;
+}
+
+//Function Entry
 int draw_bounding_box(int argc, char ** argv) {
 
-	std::string data_address;
+	std::string disk_address;
 	std::string data_source;
-	point3d min_point;
-	point3d max_point;
+	std::string aabb_file;
 	int width, depth, height;
 
-	int data_type;	/*
-					* 1 for block gmm
-					* 2 for sgmm
-					* 3 for sgmm cluster
-					*/
+	//parameter input
 	std::cout << "----------DRAW BOUNDING BOX MODULE------------\n";
 	std::cout << "input data address\n";
-	std::cin >> data_address;
+	std::cin >> disk_address;
 	std::cout << "input data name\n";
 	std::cin >> data_source;
-	std::cout << "input width depth height (3)\n";
+	std::cout << "input aabb file\n";
+	std::cin >> aabb_file;
+	std::cout << "input width depth height(3)\n";
 	std::cin >> width >> depth >> height;
-	std::cout << "input data type\n";
-	std::cin >> data_type;
-	if (data_type <= 0 || data_type > 3) {
-		exit(1);
-	}
-	if (data_type != 3) {
-
-	}
-
-	//open bounding box file
-	std::ifstream bounding_box_file(data_address + data_source + ".reoc");
-	if (bounding_box_file.is_open() == false) {
-		std::cout << "can not open .reoc file\n";
-		exit(1);
-	}
 
 	//reading volume data
 	voxel_type * volume_data = new voxel_type[width*depth*height];
-	if (read_raw_file(data_address + data_source + ".raw", volume_data, width, depth, height) == false) {
+	if (read_raw_file(disk_address + data_source + ".raw", volume_data, width, depth, height) == false) {
 		std::cout << "can not read .raw file\n";
 		exit(1);
 	}
 
-	int block_num;
-	bounding_box_file >> block_num;
-	for (int i = 0; i < block_num; i++) {
-		bounding_box_file >> min_point.x >> min_point.y >> min_point.z >> max_point.x >> max_point.y >> max_point.z;
-		int t;
-		bounding_box_file >> t;
-		draw_bounding_box(volume_data, min_point, max_point, width, depth, height);
+	//Draw aabbs
+	std::vector<AABB> aabbs = read_AABB_from_file(disk_address, aabb_file);
+	for (const AABB & aabb : aabbs) {
+		draw_bounding_box(volume_data, aabb.min_point, aabb.max_point, width, depth, height);
 	}
 
-	std::ofstream new_raw_file(data_address + data_source+"_AABB" + ".raw");
+	//Writing new volume data
+	std::ofstream new_raw_file(disk_address + data_source+"_AABB" + ".raw");
 	if (new_raw_file.is_open() == false) {
 		std::cout << "can not create .raw file\n";
 		exit(1);
 	}
-	new_raw_file.write((const char*)volume_data, width*depth*height);
+	new_raw_file.write((const char*)(volume_data), width*depth*height);
 	std::cout << "Drawing bounding box finished\n";
-	//delete[] volume_data;
+	delete[] volume_data;
+
+	//Creating .vifo file for new volume data
 	std::cout << "Creating .vifo file for _AABB.raw file\n";
-	create_vifo_file(data_address, data_source + "_AABB", width, depth, height);
+	create_vifo_file(disk_address, data_source + "_AABB", width, depth, height);
 	std::cin.get();
 	return 0;
 }
