@@ -684,12 +684,17 @@ bool re_save_exleaves_text(const std::string & path, const std::string & file_na
 	assert(height == ::data_height);
 
 	std::size_t total_size = width*depth*height;
-	id_type * id_table = new int[total_size];
+	//id_type * id_table = new int[total_size];
 
 	std::ofstream out_file(path + file_name + ".reocex", std::ios::binary);
 	if (out_file.is_open() == false) {
 		return false;
 	}
+	std::ofstream out_file_bin(path + file_name + ".reocexbin", std::ios::binary);
+	if (out_file_bin.is_open() == false) {
+		return false;
+	}
+
 	int count = 0;
 	for (const auto item : leaves) {
 		//auto xmin = item->min_point.x;
@@ -705,15 +710,21 @@ bool re_save_exleaves_text(const std::string & path, const std::string & file_na
 		auto dymax = item->max_data_point.y;
 		auto dzmax = item->max_data_point.z;
 		count += (dzmax - dzmin)*(dymax - dymin)*(dxmax - dxmin);
-		for (auto z = dzmin; z < dzmax; z++) {
-			for (auto y = dymin; y < dymax; y++) {
-				for (auto x = dxmin; x < dxmax; x++) {
-					pos_type pos = x + y*width + z*width*depth;
-					id_table[pos] = item->id;
-				}
-			}
-		}
-		out_file <</* xmin << " " << ymin << " " << zmin << " " << xmax << " " << ymax << " " << zmax << " " << */item->id << std::endl;
+		//for (auto z = dzmin; z < dzmax; z++) {
+		//	for (auto y = dymin; y < dymax; y++) {
+		//		for (auto x = dxmin; x < dxmax; x++) {
+		//			pos_type pos = x + y*width + z*width*depth;
+		//			id_table[pos] = item->id;
+		//		}
+		//	}
+		//}
+		out_file <<item->min_data_point<<" "<<item->max_data_point<< " " << item->id << std::endl;
+		out_file_bin.write((const char *)&item->min_data_point.x, sizeof(item->min_data_point.x));
+		out_file_bin.write((const char *)&item->min_data_point.y, sizeof(item->min_data_point.y));
+		out_file_bin.write((const char *)&item->min_data_point.z, sizeof(item->min_data_point.z));
+		out_file_bin.write((const char *)&item->max_data_point.x, sizeof(item->max_data_point.x));
+		out_file_bin.write((const char *)&item->max_data_point.y, sizeof(item->max_data_point.y));
+		out_file_bin.write((const char *)&item->max_data_point.z, sizeof(item->max_data_point.z));
 	}
 	out_file.close();
 	//std::ofstream out_table_file(path + file_name + ".reidtex");
@@ -726,7 +737,8 @@ bool re_save_exleaves_text(const std::string & path, const std::string & file_na
 	////out_table_file.write((const char *)id_table,sizeof(id_type)*total_size);
 	//out_table_file.close();
 	std::cout << "extended octree leaves:" << count << std::endl;
-	delete[] id_table;
+
+	//delete[] id_table;
 	return true;
 }
 
@@ -842,8 +854,8 @@ int subdivision(int argc, char ** argv) {
 	std::cout << " number of extended octree leaf node:" << extended_octree_leaves.size() << std::endl;
 	//---------------------------------------
 
-	//std::sort(extended_octree_leaves.begin(), extended_octree_leaves.end(), leaf_cmp);
-	//re_save_exleaves_text(dir, file_name, extended_octree_leaves, data_width, data_depth, data_height);
+	std::sort(extended_octree_leaves.begin(), extended_octree_leaves.end(), leaf_cmp);
+	re_save_exleaves_text(dir, file_name, extended_octree_leaves, data_width, data_depth, data_height);
 
 	std::cout << "min side:" << min_width << " " << min_depth << " " << min_height << std::endl;
 	std::cin.get();
