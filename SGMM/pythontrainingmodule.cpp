@@ -2,6 +2,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <ctime>
 #ifdef EMBEDDING_PYTHON2
 #include <Python.h>
 #endif

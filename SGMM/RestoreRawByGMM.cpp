@@ -212,7 +212,7 @@ int restore_raw_by_gmm(int argc, char **argv)
 	f_result.close();
 
 	std::cout << "Creating .vifo file\n";
-	create_vifo_file(disk_address, data_source + "_ restored_gmm", width, depth, height);
+	create_vifo_file(disk_address, data_source + "_restored_gmm", width, depth, height);
 
 	cudaFree(raw_result);
 	cudaFree(temp_p);

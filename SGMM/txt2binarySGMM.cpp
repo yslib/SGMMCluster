@@ -101,6 +101,8 @@ int txt2binarysgmm(int argc,char ** argv)
 	sgmmBlock* block_data = new sgmmBlock[block_num];
 	std::cout << std::endl << "Part1: Reading SGMMs..." << std::endl;
 	int count = 0;
+	int total_gauss_count = 0;
+	int total_bin_count = 0;
 	//reading training text file
 	for (int i = 0; i < sgmm_file_num; i++) {
 		std::string sgmm_input_name = disk_address + data_source + "_SGMM_Result_" + Int2String(i) + ".txt";
@@ -112,6 +114,7 @@ int txt2binarysgmm(int argc,char ** argv)
 			exit(1);
 		}
 
+	
 		//
 		for (int j = 0; j < stride; j++) {
 			int block_index = i * stride + j;		//absolute index for all files
@@ -123,17 +126,14 @@ int txt2binarysgmm(int argc,char ** argv)
 			assert(bin_num <= max_bin_num);
 			
 			block_data[block_index].bin_num_ = bin_num;
-			if (block_index == 0) {
-				std::cout << bin_num << std::endl;
-			}
+			total_bin_count += bin_num;
 			for (int k = 0; k < bin_num; k++) {
-				if (block_index == 0) {
-					std::cout << "-----------------GAUSS :" << k << std::endl;
-				}
+
 				int real_index = 0;
 				float probability = 0.0;
 				int gauss_count = 0;
 				sgmm_input >> real_index >> probability >> gauss_count;
+				total_gauss_count += gauss_count;
 				assert(real_index >= 0);
 				assert(real_index < max_bin_num);
 				assert(gauss_count >= 0);
@@ -141,11 +141,6 @@ int txt2binarysgmm(int argc,char ** argv)
 				block_data[block_index].bin_indexs_[k] = real_index;
 				block_data[block_index].bins_[real_index].probability_ = probability;
 				block_data[block_index].bins_[real_index].gauss_count_ = gauss_count;
-				if (block_index == 0) {
-					std::cout << "bin index:" << real_index << std::endl;
-					std::cout << "probability:" << probability << std::endl;
-					std::cout << "gauss count:" << gauss_count << std::endl;
-				}
 				//read information for every gaussian component
 				for (int p = 0; p < gauss_count; p++) {
 
@@ -156,13 +151,13 @@ int txt2binarysgmm(int argc,char ** argv)
 					sgmm_input >> weight;
 					sgmm_input >> mean[0] >> mean[1] >> mean[2];
 					sgmm_input >> covariance[0] >> covariance[1] >> covariance[2] >> covariance[3] >> covariance[4] >> covariance[5];
-					if (block_index == 0) {
-						std::cout << "GAUSS COUNT:" << p << std::endl;
-						std::cout <<"weight:"<< weight << std::endl;
-						std::cout <<"mean:"<< mean[0] << " " << mean[1] << " " << mean[2] << std::endl;
-						std::cout << "covariance:"<<covariance[0] << " " << covariance[1] << " " << covariance[2] << " " << covariance[3] <<
-							covariance[4] << " " << covariance[5] << std::endl;
-					}
+					//if (block_index == 0) {
+					//	std::cout << "GAUSS COUNT:" << p << std::endl;
+					//	std::cout <<"weight:"<< weight << std::endl;
+					//	std::cout <<"mean:"<< mean[0] << " " << mean[1] << " " << mean[2] << std::endl;
+					//	std::cout << "covariance:"<<covariance[0] << " " << covariance[1] << " " << covariance[2] << " " << covariance[3] <<
+					//		covariance[4] << " " << covariance[5] << std::endl;
+					//}
 					block_data[block_index].bins_[real_index].gausses_[p].weight_ = weight;
 					for (int loop = 0; loop < 3; loop++) {
 						block_data[block_index].bins_[real_index].gausses_[p].mean_[loop] = mean[loop];
@@ -182,14 +177,19 @@ int txt2binarysgmm(int argc,char ** argv)
 		//remove(sgmm_input_name.c_str());
 	}
 	std::cout << "block in total:" << count << std::endl;
-
+	if (count == 0) {
+		std::cout << "No Block\n";
+		return 0;
+	}
 	// Test only
 	int total_count = 0;
 	for (int i = 0; i < block_num; i++) {
 		total_count += block_data[i].gauss_count_;
 	}
 	std::cout << "average gauss count for every block = " << total_count / block_num << std::endl;
-
+	std::cout << "total gauss count :" << total_gauss_count << std::endl;
+	std::cout << "total bin count:" << total_bin_count << std::endl;
+	std::cout << "Bins per Blocks\n" << total_bin_count / block_num << std::endl;
 	// Part2: writing as binary file
 	std::ofstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	for (int block_index = 0; block_index < block_num; block_index++) {

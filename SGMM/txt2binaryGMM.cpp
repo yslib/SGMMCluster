@@ -71,6 +71,7 @@ int txt2binarygmm(int argc,char ** argv)
 	std::cout << width << " " << depth << " " << height << " " << sgmm_file_num << " " << side << std::endl;
 
 	gmmBlock* block_data = new gmmBlock[block_num];
+	int total_gauss_count = 0;
 	int count = 0;
 	for (int i = 0; i < sgmm_file_num; i++) {
 		std::string idx = Int2String(i);
@@ -90,6 +91,7 @@ int txt2binarygmm(int argc,char ** argv)
 			int temp_int;
 			gmm_input >> temp_int;
 			block_data[final_index].gauss_num_ = temp_int;
+			total_gauss_count += temp_int;
 			for (int gauss_index = 0; gauss_index < block_data[final_index].gauss_num_; gauss_index++) {
 				gmm_input >> block_data[final_index].gausses_[gauss_index].weight_;
 				gmm_input >> block_data[final_index].gausses_[gauss_index].mean_;
@@ -103,7 +105,13 @@ int txt2binarygmm(int argc,char ** argv)
 		gmm_input.close();
 		//remove(gmm_input_name.c_str());
 	}
+	if (count == 0) {
+		std::cout << "No Block\n";
+		return 0;
+	}
 	std::cout << "block in total:" << count << std::endl;
+	std::cout << "gauss in total:" << total_gauss_count << std::endl;
+	std::cout << "average gauss per block:" << total_gauss_count / count << std::endl;
 	// Part2:
 	std::ofstream f_gmm(gmm_binary_address, std::ios::binary);
 	for (int block_index = 0; block_index < block_num; block_index++) {

@@ -57,13 +57,7 @@ struct sgmmIntegrations {
 };
 static sgmmIntegrations* all_block_integrations;
 
-static std::string Int2String(int i) {
-	std::stringstream s_temp;
-	std::string s;
-	s_temp << i;
-	s_temp >> s;
-	return s;
-}
+
 
 //
 __host__ __device__
@@ -532,9 +526,7 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	for (int block_index = 0; block_index < block_num; block_index++) {
 
 		f_sgmm.read((char*)&(block_data[block_index].bin_num_), sizeof(unsigned char));
-		if (block_index == 0) {
-			std::cout << (int(block_data[block_index].bin_num_)) << std::endl;
-		}
+
 		assert(block_data[block_index].bin_num_ >= 0);
 		assert(block_data[block_index].bin_num_ <= max_bin_num);
 		for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
@@ -623,9 +615,9 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 
 			std::cout << "Calculating denominator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
 			//////////////////////////////////////////////////////////////////////////
-			std::ofstream f_temp_integration_out("e:/testinfo/i_" + Int2String(loop_index), std::ios::binary);
-			f_temp_integration_out.write((char *)all_block_integrations_host, block_num * sizeof(sgmmIntegrations));
-			f_temp_integration_out.close();
+			//std::ofstream f_temp_integration_out("e:/testinfo/i_" + Int2String(loop_index), std::ios::binary);
+			//f_temp_integration_out.write((char *)all_block_integrations_host, block_num * sizeof(sgmmIntegrations));
+			//f_temp_integration_out.close();
 			//////////////////////////////////////////////////////////////////////////
 			//Mark(Int2String(loop_index));
 		}

@@ -56,26 +56,26 @@ static std::string Int2String(int i) {
 int txt2binarySGMMCluster(int argc,char ** argv) {
 
 	//constant varible
-	static const int n = 3; // 数据维度
+	const int n = 3; // 数据维度
 	std::cout << "---------- TXT TO BINARY SGMM CLUSTER MODULE-------------\n";
 
-	static std::string data_source; // 被处理的数据的名字
-	static std::string disk_address;
-	static int width; // 物体宽
-	static int depth; // 物体深
-	static int height;  // 物体高
-	static int sgmm_file_num;
+	std::string data_source; // 被处理的数据的名字
+	std::string disk_address;
+	int width; // 物体宽
+	int depth; // 物体深
+	int height;  // 物体高
+	int sgmm_file_num;
 
-	static std::string result_name;
-	static int block_num;
-	static int stride;
-	static int total_size;
-	static unsigned char * raw_src;
-	static unsigned char * raw_result;
-	static double * temp_p; // 调试用1
-	static double * temp_p2; // 调试用2
-	static int * zero_count;
-	static int * calc_count;
+	std::string result_name;
+	int block_num;
+	int stride;
+	int total_size;
+	unsigned char * raw_src;
+	unsigned char * raw_result;
+	double * temp_p; // 调试用1
+	double * temp_p2; // 调试用2
+	int * zero_count;
+	int * calc_count;
 
 	// Part1: 读取SGMM数据
 	std::cout << "input data address\n";
@@ -103,8 +103,13 @@ int txt2binarySGMMCluster(int argc,char ** argv) {
 	std::cout << "total size:" << total_size << std::endl;
 	std::string sgmm_binary_address = disk_address + data_source + "_SGMM_Cluster_Result.sgmm";
 	sgmmClusterBlock* block_data = new sgmmClusterBlock[block_num];
+
+
 	std::cout << std::endl << "Part1: Reading SGMMs..." << std::endl;
+
 	int count = 0;
+	int total_cluster_count = 0;
+	int total_gauss_count = 0;
 	for (int i = 0; i < sgmm_file_num; i++) {
 		std::string sgmm_input_name = disk_address + data_source + "_SGMM_Result_Cluster_" + Int2String(i) + ".txt";
 		std::cout << "Reading file " << sgmm_input_name << "..." << std::endl;
@@ -117,8 +122,9 @@ int txt2binarySGMMCluster(int argc,char ** argv) {
 
 		//遍历stride个块
 		for (int j = 0; j < stride; j++) {
-			int cluster_num; //块的实际聚类数量
+			int cluster_num; 
 			sgmm_input >> cluster_num;
+			total_cluster_count += cluster_num;
 			assert(cluster_num <= 10);
 
 			sgmmClusterBlock single_block;
@@ -130,7 +136,7 @@ int txt2binarySGMMCluster(int argc,char ** argv) {
 				int gauss_count;
 				double sample_value;
 				sgmm_input >> probability >> gauss_count >> sample_value;
-
+				total_gauss_count += gauss_count;
 				Cluster single_cluster;
 				single_cluster.probability_ = probability;
 				single_cluster.gauss_count_ = gauss_count;
@@ -174,8 +180,19 @@ int txt2binarySGMMCluster(int argc,char ** argv) {
 		sgmm_input.close();
 		//remove(sgmm_input_name.c_str());
 	}
+	if (count == 0) {
+		std::cout << "No Block\n";
+		return 0;
+	}
+	//
 	std::cout << "block in total:" << count << std::endl;
-	// Part2: 存储SGMM为二进制
+	std::cout << "Gauss count:" << total_gauss_count << std::endl;
+	std::cout << "Cluster Count:" << total_cluster_count << std::endl;
+	std::cout << "average gauss count per block:" << total_gauss_count / count << std::endl;
+	std::cout << "average cluster count per block:" << total_cluster_count / count << std::endl;
+	if(total_cluster_count != 0) std::cout << "average gauss count per cluster:" << total_gauss_count / total_cluster_count << std::endl;
+
+	// Part2: Save as binary file
 	std::ofstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	for (int block_index = 0; block_index < block_num; block_index++) {
 		//std::cout << block_index << std::endl;
@@ -198,6 +215,8 @@ int txt2binarySGMMCluster(int argc,char ** argv) {
 		}
 	}
 	f_sgmm.close();
+
+
 	std::cin.get();
 	return 0;
 }
