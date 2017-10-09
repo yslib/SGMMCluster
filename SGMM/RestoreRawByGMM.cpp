@@ -18,17 +18,16 @@
 #define M_PI 3.14159265358979323846
 
 //
-static struct Gauss1 {
-	float weight_ = 0.0;
-	float mean_ = 0.0;
-	float covariance_ = 0.0;
-};
-static struct gmmBlock {
-	unsigned char gauss_num_;
-	Gauss1 gausses_[12];
-};
-static gmmBlock* block_data_device;
-static gmmBlock* block_data_host;
+//static struct Gauss1 {
+//	float weight_ = 0.0;
+//	float mean_ = 0.0;
+//	float covariance_ = 0.0;
+//};
+//static struct gmmBlock {
+//	unsigned char gauss_num_;
+//	Gauss1 gausses_[12];
+//};
+
 
 static std::string Int2String(int i) {
 	std::stringstream s_temp;
@@ -122,6 +121,9 @@ int restore_raw_by_gmm(int argc, char **argv)
 	unsigned char * raw_src;
 	double * temp_p;
 	double * temp_p2;
+
+	gmmBlock* block_data_device;
+	gmmBlock* block_data_host;
 
 	std::cout << "----------------RESTORE RAW BY BLOCK GMM MODULE---------------\n";
 	std::cout << "input data address\n";

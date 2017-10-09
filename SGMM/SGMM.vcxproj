@@ -28,7 +28,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="menu.c" />
     <ClCompile Include="OCTree.cpp" />
-    <CudaCompile Include="RealTimeVolumeRendering\realtimerendering.cu" />
+    <CudaCompile Include="RealTimeVolumeRendering\realtimerendering.cpp" />
     <CudaCompile Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cu" />
     <CudaCompile Include="RestoreRawByGMM.cpp" />
     <CudaCompile Include="RestoreRawBySGMMCluster.cpp">
@@ -59,7 +59,7 @@
     <ClInclude Include="RealTimeVolumeRendering\helper_math.h" />
     <ClInclude Include="RealTimeVolumeRendering\interaction.h" />
     <ClInclude Include="RealTimeVolumeRendering\realtimerendering.h" />
-    <ClInclude Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cuh" />
+    <ClInclude Include="RealTimeVolumeRendering\real_time_sgmm_cluster.h" />
     <ClInclude Include="funcs.h" />
     <ClInclude Include="tailor.h" />
   </ItemGroup>

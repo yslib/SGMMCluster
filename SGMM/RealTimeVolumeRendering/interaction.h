@@ -6,9 +6,9 @@
 #include <cstdlib>
 #include <cstdio>
 
-
-const int W = 600;
-const int H = 600;
+//Window Parameter
+const int W = 600;			//Width of the picture
+const int H = 600;			//Height of the picture
 const int DELTA = 5;
 const int NX = 128, NY = 128, NZ = 256;
 

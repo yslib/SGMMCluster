@@ -12,6 +12,7 @@
 #include <cassert>
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "funcs.h"
 #define M_PI 3.14159265358979323846
 
 #define DISPLAY_CUDA_CALL_ERROR_INFO
@@ -691,6 +692,10 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	}
 	f_result.write((const char*)raw_result_host, total_size);
 	f_result.close();
+
+	//Creating .vifo file
+	create_vifo_file(disk_address, disk_address+"_restored_sgmm", width, depth, height);
+
 	CUDA_CALL(cudaFree(raw_result));
 	CUDA_CALL(cudaFree(temp_p));
 	CUDA_CALL(cudaFree(temp_p2));

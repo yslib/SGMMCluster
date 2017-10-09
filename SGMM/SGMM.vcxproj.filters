@@ -29,16 +29,16 @@
     <ClInclude Include="RealTimeVolumeRendering\helper_math.h" />
     <ClInclude Include="RealTimeVolumeRendering\interaction.h" />
     <ClInclude Include="RealTimeVolumeRendering\realtimerendering.h" />
-    <ClInclude Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cuh" />
     <ClInclude Include="helper_cuda.h" />
     <ClInclude Include="helper_string.h" />
     <ClInclude Include="funcs.h" />
+    <ClInclude Include="RealTimeVolumeRendering\real_time_sgmm_cluster.h" />
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="RealTimeVolumeRendering\real_time_sgmm_cluster.cu" />
-    <CudaCompile Include="RealTimeVolumeRendering\realtimerendering.cu" />
     <CudaCompile Include="RestoreRawByGMM.cpp" />
     <CudaCompile Include="RestoreRawBySGMM.cpp" />
     <CudaCompile Include="RestoreRawBySGMMCluster.cpp" />
+    <CudaCompile Include="RealTimeVolumeRendering\realtimerendering.cpp" />
   </ItemGroup>
 </Project>

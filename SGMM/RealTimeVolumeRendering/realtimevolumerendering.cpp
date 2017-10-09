@@ -1,3 +1,11 @@
+/*
+* THIS FILE MUST NOT BE MODIFIED.
+* THIS IS JUST A SIMPLE VOLUME RENDERING FRAMEWORK.
+* YOU CAN SPECIALZE THE FRAMEWORK BY IMPLEMENTEING
+* THE kernelLauncher FUNCTION
+*/
+
+
 #include <cstdlib>
 #include <iostream>
 #include "realtimerendering.h"
@@ -12,6 +20,8 @@
 #include <cuda_gl_interop.h>
 
 
+
+//
 GLuint pbo = 0;
 GLuint tex = 0;
 struct cudaGraphicsResource * cuda_pbo_resource;
@@ -23,6 +33,8 @@ float *d_vol;
 float zs = NZ;
 float dist = 0.0f, theta = 0.f, threshold = 0.0f;
 
+
+//FPS
 int fps = 0;
 clock_t prev_clock, pres_clock;
 
@@ -51,7 +63,9 @@ void render()
 
 	cudaGraphicsResourceGetMappedPointer((void **)&d_out, NULL, cuda_pbo_resource);
 
+	//TODO:
 	kernelLauncher(d_out,d_vol, W, H,volumeSize,method,zs,theta,threshold,dist);
+	//END
 
 	cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);
 
@@ -82,7 +96,7 @@ void initGLUT(int argc, char **argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 	glutInitWindowSize(W, H);
-	glutCreateWindow("asdfa");
+	glutCreateWindow("Real Time Volume Rendering");
 	glewInit();
 }
 
@@ -105,7 +119,9 @@ void exitfunc() {
 int RealTimeVolumeRender(int argc, char ** argv) {
 	//cudaMalloc(&d_vol, NX*NY*NZ * sizeof(float));
 	prev_clock = clock();
-	volumeKernelLancher(d_vol, volumeSize, id, params);
+
+	InitResources(d_vol, volumeSize, id, params);
+
 	printInstrctions();
 	initGLUT(argc, argv);
 	initPixelBuffer();

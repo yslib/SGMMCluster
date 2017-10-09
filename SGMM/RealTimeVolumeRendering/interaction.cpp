@@ -62,6 +62,6 @@ void mymenu(int val)
 	default:
 		break;
 	}
-	volumeKernelLancher(d_vol, volumeSize, id, params);
+	InitResources(d_vol, volumeSize, id, params);
 	glutPostRedisplay();
 }

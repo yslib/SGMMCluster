@@ -64,6 +64,7 @@ struct point3d {
 		return !(*this == p);
 	}
 
+
 };
 
 struct AABB{
@@ -72,7 +73,24 @@ struct AABB{
 	point3d max_point;
 };
 
-// 基本数据结构
+//struct for block gmm
+struct Gauss1 {
+	Gauss1(float weight = 0.0f, float mean = 0.0f, float cov = 0.0f) :weight_{ weight }, mean_{ mean }, covariance_{ cov } 
+	{}
+	float weight_;
+	float mean_;
+	float covariance_;
+};
+
+
+struct gmmBlock {
+	gmmBlock() :gauss_num_{ 0 } {}
+	unsigned char gauss_num_;
+	Gauss1 gausses_[12];
+};
+
+
+//  struct for sgmm
 struct sgmmClusterGauss {
 	float weight_;
 	float mean_[3];
@@ -90,6 +108,7 @@ struct sgmmClusterGauss {
 
 
 struct Cluster {
+
 	float probability_ = 0.0;
 	unsigned char gauss_count_ = 0;
 	float sample_value_ = 0;
@@ -109,6 +128,9 @@ struct sgmmClusterIntegrations {
 	float integration_denominator[MAX_CLUSTER_NUM];
 	float integration_value[MAX_CLUSTER_NUM];
 };
+
+
+
 
 std::size_t get_file_size(const std::string & path);
 

@@ -30,6 +30,7 @@ int main(int argc,char ** argv)
 	MenuConfig("q", "Quit from the program.", quit);
 	MenuConfig("c", "Cuda Device Query", cuda_device_query);
 	MenuConfig("t", "Test", test);
+	MenuConfig("r", "Real Time Rendering", RealTimeVolumeRender);
 
 	//command for sgmm cluster
 	MenuConfig("1", "Subdivide the volume data by octree.", subdivision);

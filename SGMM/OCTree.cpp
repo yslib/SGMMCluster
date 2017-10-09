@@ -375,16 +375,21 @@ int find_leaves(octree_node * root, std::vector<octree_node *> & result, bool as
 		assert(root->max_point >= root->max_data_point);
 #endif
 		if (assignid == true)root->id = new_id();
-		if (min_width > root->max_point.x - root->min_point.x)min_width = root->max_point.x - root->min_point.x;
-		if (min_depth > root->max_point.y - root->min_point.y)min_depth = root->max_point.y - root->min_point.y;
-		if (min_height > root->max_point.z - root->min_point.z)min_height = root->max_point.z - root->min_point.z;
+		//Find minimum blocks
+		if ((min_width > root->max_point.x - root->min_point.x)
+			|| (min_depth > root->max_point.y - root->min_point.y)
+			||( min_height > root->max_point.z - root->min_point.z)) {
+			min_width = root->max_point.x - root->min_point.x;
+			min_depth = root->max_point.y - root->min_point.y;
+			min_height = root->max_point.z - root->min_point.z;
+		}
 		result.push_back(root);
 	}
 	return max_height + 1;
 }
-//Description
-//extend the octree as a complete octree
-
+//
+//extend the octree as a complete octree,invalid leaf node excluded
+//
 
 void extend_octree(octree_node * root, int current_height, int max_height) {
 	//达到最大高度
@@ -677,7 +682,15 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 	return true;
 }
 
-bool re_save_exleaves_text(const std::string & path, const std::string & file_name, const std::vector<octree_node*> & leaves, std::size_t width, std::size_t depth, std::size_t height) {
+bool re_save_exleaves_text(const std::string & path,
+	const std::string & file_name,
+	const std::vector<octree_node*> & leaves,
+	pos_type width, 
+	pos_type depth, 
+	pos_type height,
+	pos_type min_width=0,
+	pos_type min_depth=0,
+	pos_type min_height=0) {
 
 	assert(width == ::data_width);
 	assert(depth == ::data_depth);
@@ -696,13 +709,16 @@ bool re_save_exleaves_text(const std::string & path, const std::string & file_na
 	}
 
 	int count = 0;
+	out_file << leaves.size() << std::endl;
+	size_t s = leaves.size();
+	out_file_bin.write((const char *)&s, sizeof(leaves.size()));
 	for (const auto item : leaves) {
 		//auto xmin = item->min_point.x;
 		//auto ymin = item->min_point.y;
 		//auto zmin = item->min_point.z;
-		//auto xmax = item->max_point.x;
-		//auto ymax = item->max_point.y;
-		//auto zmax = item->max_point.z;
+		auto xmax = item->max_point.x;
+		auto ymax = item->max_point.y;
+		auto zmax = item->max_point.z;
 		auto dxmin = item->min_data_point.x;
 		auto dymin = item->min_data_point.y;
 		auto dzmin = item->min_data_point.z;
@@ -718,15 +734,21 @@ bool re_save_exleaves_text(const std::string & path, const std::string & file_na
 		//		}
 		//	}
 		//}
-		out_file <<item->min_data_point<<" "<<item->max_data_point<< " " << item->id << std::endl;
-		out_file_bin.write((const char *)&item->min_data_point.x, sizeof(item->min_data_point.x));
+		out_file <<item->max_point<<" "<< item->id << std::endl;
+		/*out_file_bin.write((const char *)&item->min_data_point.x, sizeof(item->min_data_point.x));
 		out_file_bin.write((const char *)&item->min_data_point.y, sizeof(item->min_data_point.y));
 		out_file_bin.write((const char *)&item->min_data_point.z, sizeof(item->min_data_point.z));
 		out_file_bin.write((const char *)&item->max_data_point.x, sizeof(item->max_data_point.x));
 		out_file_bin.write((const char *)&item->max_data_point.y, sizeof(item->max_data_point.y));
-		out_file_bin.write((const char *)&item->max_data_point.z, sizeof(item->max_data_point.z));
+		out_file_bin.write((const char *)&item->max_data_point.z, sizeof(item->max_data_point.z));*/
 	}
+	out_file << min_width << " " << min_depth << " " << min_height << std::endl;
 	out_file.close();
+
+	out_file_bin.write((const char*)&min_width, sizeof(min_width));
+	out_file_bin.write((const char*)&min_depth, sizeof(min_depth));
+	out_file_bin.write((const char*)&min_height, sizeof(min_height));
+	out_file_bin.close();
 	//std::ofstream out_table_file(path + file_name + ".reidtex");
 	//if (out_table_file.is_open() == false){
 	//	return false;
@@ -811,9 +833,10 @@ int subdivision(int argc, char ** argv) {
 	re_save_leaves_text(dir, file_name, leaves, data_width, data_depth, data_height);
 
 
-	//Extending octree 
+	//Extending octree and exclude the empty leaf node
 	std::cout << "Extending octree ...\n";
 	extend_regular_octree(root, 1, h);
+
 #ifdef LEAF_ID_CONTINUOUS_CHECK
 	{
 		//check leaf node if it is continuous
@@ -838,7 +861,7 @@ int subdivision(int argc, char ** argv) {
 		continuous = true;
 		for (auto const item : extended_octree_leaves) {
 			id_type id = item->id;
-			if (id >= n_leaf)std::cout << "id out of range\n";
+			if (id >= n_leaf)std::cout << "id is out of range\n";
 			checks[id]++;
 		}
 		for (int i = 0; i < n_leaf; i++) {
@@ -852,14 +875,15 @@ int subdivision(int argc, char ** argv) {
 #endif
 	std::cout << "number of octree leaf node:" << leaves.size() << std::endl;
 	std::cout << " number of extended octree leaf node:" << extended_octree_leaves.size() << std::endl;
-	//---------------------------------------
-
+	
+	//Save extended octree leaves node for real time rendering
 	std::sort(extended_octree_leaves.begin(), extended_octree_leaves.end(), leaf_cmp);
-	re_save_exleaves_text(dir, file_name, extended_octree_leaves, data_width, data_depth, data_height);
-
+	re_save_exleaves_text(dir, file_name, extended_octree_leaves, data_width, data_depth, data_height,min_width,min_depth,min_height);
 	std::cout << "min side:" << min_width << " " << min_depth << " " << min_height << std::endl;
-	std::cin.get();
 
+
+
+	std::cin.get();
 	delete[] volume_data;
 	return 0;
 }

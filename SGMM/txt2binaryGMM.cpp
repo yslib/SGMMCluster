@@ -7,27 +7,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <cassert>
+#include "funcs.h"
 
-
-struct Gauss1 {
-	float weight_ = 0.0;
-	float mean_ = 0.0;
-	float covariance_ = 0.0;
-};
-
-
-struct gmmBlock {
-	unsigned char gauss_num_ = 12;
-	Gauss1 gausses_[12];
-};
-
-
-static std::string Int2String(int i) {
-	std::stringstream s_temp;
-	std::string s;
-	s_temp << i;
-	return s_temp.str();
-}
 
 int txt2binarygmm(int argc,char ** argv)
 {
@@ -74,7 +55,7 @@ int txt2binarygmm(int argc,char ** argv)
 	int total_gauss_count = 0;
 	int count = 0;
 	for (int i = 0; i < sgmm_file_num; i++) {
-		std::string idx = Int2String(i);
+		std::string idx = int_to_string(i);
 		std::string gmm_input_name = disk_address + data_source + "_GMM_Result_" + idx + ".txt";
 		//std::string gmm_input_name = "e:/train/test/test_GMM_Result_0.txt";
 		std::cout << "Reading file " << gmm_input_name << "..." << std::endl;

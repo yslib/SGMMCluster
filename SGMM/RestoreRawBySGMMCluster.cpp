@@ -1147,6 +1147,9 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 	cudaFree(debug_block_info_device);
 #endif
 
+	//Creating .vifo file
+	create_vifo_file(disk_address, data_source + "_restored_sgmm_cluster", width, depth, height);
+
 	std::cin.get();
 	return 0;
 }

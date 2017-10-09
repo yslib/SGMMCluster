@@ -4,10 +4,12 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 #include "helper_math.h"
-#include "real_time_sgmm_cluster.cuh"
+#include "real_time_sgmm_cluster.h"
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
+#include <cassert>
 
 
 #include "interaction.h"
@@ -44,98 +46,7 @@ __device__ unsigned char clip(int n) {
 }
 // Atomic operation
 
-//__global__
-//void dotKernel(int *d_res, const int *d_a, const int *d_b, int n) {
-//	const int idx = blockDim.x*blockIdx.x + threadIdx.x;
-//	if (idx >= n)return;
-//	const int s_idx = threadIdx.x;
-//
-//	__shared__ int s_prob[TPB];
-//	s_prob[threadIdx.x] = d_a[idx] * d_b[idx];
-//	__syncthreads();
-//	if (threadIdx.x == 0) {
-//		int blockSum = 0;
-//		for (int i = 0; i < blockDim.x;i++) {
-//			blockSum += s_prob[i];
-//		}
-//		atomicAdd(d_res, blockSum);// acessing a shared varible
-//	}
-//	
-//}
-//__global__ void distanceKernel(uchar4 * d_out, int w, int h, int2 pos) {
-//	const int c = blockDim.x*blockIdx.x + threadIdx.x;
-//	const int r = blockDim.y*blockIdx.y + threadIdx.y;
-//	const int i = r*w + c;
-//	if (r >= h || c >= w)
-//		return;
-//	int d =  sqrtf((c-pos.x)*(c-pos.x) + (r-pos.y)*(r-pos.y));
-//	const unsigned char intensity = clip(255 - d);
-//	d_out[i].x = intensity;
-//	d_out[i].y = intensity;
-//	d_out[i].z = 0;
-//	d_out[i].w = 255;
-//}
-//void kernelLauncher(uchar4 * d_out, int w, int h, int2 pos) {
-//	const dim3 blockSize(TX, TY);
-//	const dim3 gridSize((w+TX-1)/TX,(h+TY-1)/TY);
-//	distanceKernel <<<gridSize, blockSize >> > (d_out, w, h, pos);
-//}
 
-//
-//Shared Memory
-
-//
-//__global__ void ddKernel(float * d_out, const float *d_in, int size, int h) {
-//	const int i = blockDim.x * blockIdx.x + threadIdx.x;
-//	if (i >= size)return;
-//	const int s_idx = threadIdx.x + RAD;
-//	extern __shared__ float s_in[];
-//	//Or
-//	//__shared__ float s_in[blockDim+2*RAD];
-//	//
-//	s_in[s_idx] = d_in[i];
-//	if (threadIdx.x < RAD) {
-//		s_in[s_idx - RAD] = d_in[i - RAD];
-//		s_in[s_idx + blockDim.x] = d_in[i + blockDim.x];
-//	}
-//	__syncthreads();
-//
-//	d_out[i] = (s_in[s_idx - 1] - 2.f*s_in[s_idx] + s_in[s_idx + 1]) / (h*h);
-//
-//}
-
-//__global__ void centroidKernel(const uchar4 * d_img, int * d_centroidCol, int * d_centroidRow, int *d_pixelCount
-//	,int width, int height) {
-//	__shared__ uint4 s_img[TPB];
-//
-//	const int idx = blockDim.x*blockIdx.x + threadIdx.x;
-//	const int s_idx = threadIdx.x;
-//	const int row = idx / width;
-//	const int col = idx - row*width;
-//
-//	if ((d_img[idx].x < 255 || d_img[idx].y<255 || d_img[idx].z < 255) && (idx<width*height)) {
-//		s_img[s_idx].x = col;
-//		s_img[s_idx].y = row;
-//		s_img[s_idx].z = 1;
-//	}
-//	else {
-//		s_img[s_idx].x = 0;
-//		s_img[s_idx].y = 0;
-//		s_img[s_idx].z = 0;
-//	}
-//	__syncthreads();
-//	for (int s = blockDim.x / 2; s >= 1; s >>= 1) {
-//		if (s_idx < s) {
-//			s_img[s_idx] += s_img[s_idx + s];
-//		}
-//		__syncthreads();
-//	}
-//	
-//	
-//}
-
-///////////////////////////////////////////////
-///////////////////////////////////////////////
 ///////////////////////////////////////////////
 struct Ray {
 	float3 o, d;
@@ -299,16 +210,18 @@ static float * data_trans_host;
 static id_type * block_id_host;
 static id_type * block_id_device;
 
-static int real_width;
-static int real_depth;
-static int real_height;
+static pos_type framework_width;
+static pos_type framework_depth;
+static pos_type framework_height;
 
 static int side;
 static int max_cluster_num;
-static int block_width;
-static int block_depth;
-static int block_height;
+
+static pos_type block_width;
+static pos_type block_depth;
+static pos_type block_height;
 static int block_size;
+
 static int width_num;
 static int depth_num;
 static int height_num;
@@ -690,8 +603,16 @@ __global__ void volumeKernel(float *d_vol, int3 volSize, int id, float4 params) 
 	d_vol[i] = func(c, r, s, id, volSize, params);
 	//printf("%d", i);
 }
-void kernelLauncher(uchar4 * d_out, float * d_vol, int w, int h, int3 volSize, 
-	int method, int zs, float theta, float threshold,float dist)
+void kernelLauncher(uchar4 * d_out,
+	float * d_vol, 
+	int w,
+	int h, 
+	int3 volSize, 
+	int method, 
+	int zs,
+	float theta,
+	float threshold,
+	float dist)
 {
 	dim3 blockSize(TX_2D, TY_2D);
 	dim3 gridSize((w+ TX_2D - 1) / TX_2D, (h + TY_2D - 1) / TY_2D);
@@ -714,7 +635,25 @@ void kernelLauncher(uchar4 * d_out, float * d_vol, int w, int h, int3 volSize,
 	//	<< "dist:" << dist << std::endl;
 
 		
-	renderKernel<<<gridSize, blockSize >>>(d_out, d_vol, w, h, volSize,method,zs,theta, threshold, dist,block_data_device,all_block_integrations_device,raw_src_device,data_trans_device,block_id_device,real_width,real_depth,block_width,block_depth,block_height,min_points_device);
+	renderKernel<<<gridSize, blockSize >>>(
+		d_out, 
+		d_vol,
+		w, h, 
+		volSize,
+		method,
+		zs,
+		theta, 
+		threshold, 
+		dist,
+		block_data_device,
+		all_block_integrations_device,
+		raw_src_device,data_trans_device,
+		block_id_device,framework_width,
+		framework_depth,
+		block_width,
+		block_depth,
+		block_height,
+		min_points_device);
 	//printf("%d %d %d\n", real_depth, block_width, block_depth);
 	CUDA_CALL(cudaDeviceSynchronize());
 }
@@ -722,72 +661,106 @@ void kernelLauncher(uchar4 * d_out, float * d_vol, int w, int h, int3 volSize,
 __host__
 void readResource()
 {
-	std::string data_source = "Combustion";
-	std::string disk_address = "d:/train/";
+	std::string data_source;
+	std::string disk_address;
 	std::string src_raw_address = disk_address + data_source + ".raw";
 	std::string sgmm_binary_address = disk_address + data_source + "_SGMM_Cluster_Result.sgmm";
 	std::string integration_cluster_address = disk_address + data_source + "_integrations_sgmm_cluster";
 	std::string trans_address = disk_address + data_source + "_TF.txt";
-	real_width = 480; // 原始数据的真实宽
-	real_depth = 720; // 原始数据的真实深
-	real_height = 112; // 原始数据的真实
-	int side = 16;
 
+	framework_width = 0;
+	framework_depth = 0;
+	framework_height =0;
 
+	//Volume data size
+	int data_width;
+	int data_depth;
+	int data_height;
+
+	int side;
+	int unreal_block_num;
+
+	//input path and file name
 	std::cout << "input data address\n";
 	std::cin >> disk_address;
 	std::cout << "input data name\n";
 	std::cin >> data_source;
+	std::cout << "input data size:" << std::endl;
+	std::cin >> data_width >> data_depth >> data_height;
+	
 
-#ifdef SQUARE
-	std::cout << "input data width depth height side (4)\n";
-	std::cin >> real_width >> real_depth >> real_height >> side;
-	width_num = real_width / side;
-	depth_num = real_depth / side;
-	height_num = real_height / side;
-	block_size = side * side *side;
-	block_num = width_num * depth_num * height_num;
-#else
-	std::cout << "input data width depth height (3)\n";
-	std::cin >> real_width >> real_depth >> real_height;
-	std::cout << "input block side(3 w d h):\n";
-	std::cin>> block_width >> block_depth >>block_height;
-
-	//并不是真实的每边块的数量 而是以八叉树最小的叶节点分成的网格边长
-	width_num = real_width / block_width;
-	depth_num = real_depth / block_depth;
-	height_num = real_height / block_height;
-
-	std::cout << "Reading .oc file\n";
-	std::ifstream read_block_num(disk_address + data_source + ".oc");
-	if (read_block_num.is_open() == false){
-		std::cout << "can not read .oc file\n";
+	//Reading block id and min block 
+	std::cout << std::endl << "Part:Reading reocex file" << std::endl;
+	std::ifstream reocex_in_file(disk_address + data_source + ".reocex");
+	if (reocex_in_file.is_open() == false) {
+		std::cout << "can not open .reocex file\n";
 		return;
 	}
-	read_block_num >> block_num;
+	reocex_in_file >> unreal_block_num;
+	std::cout << "Minimum blocks in total:" << unreal_block_num << std::endl;
+	block_id_host = new id_type[unreal_block_num];
+	for (int i = 0; i < unreal_block_num; i++) {
+		pos_type X, Y, Z;
+		reocex_in_file >> X >> Y >> Z;
+		framework_width = std::max(framework_width, X);
+		framework_depth = std::max(framework_depth, Y);
+		framework_height = std::max(framework_height, Z);
+		reocex_in_file >> block_id_host[i];
+	}
+	reocex_in_file >> block_width >> block_depth >> block_height;
+	std::cout << "Minimum block side (3):" << block_width << " " << block_depth << " " << block_height << std::endl;
+	block_size = block_width*block_depth*block_height;
+	std::cout << "Minimum block size" << block_size << std::endl;
+	//这里的unreal_block_num 可能与文件里的元素数量不匹配
+	reocex_in_file.close();
+	CUDA_CALL(cudaMalloc(&block_id_device, sizeof(id_type)*unreal_block_num));
+	CUDA_CALL(cudaMemcpy(block_id_device, block_id_host, sizeof(id_type)*unreal_block_num, cudaMemcpyHostToDevice));
+	delete[] block_id_host;
 
+	//Reading min points
+	std::cout << "Reading .reoc file\n";
+	std::ifstream reoc_in_file(disk_address + data_source + ".reoc");
+	if (reoc_in_file.is_open() == false){
+		std::cout << "can not read .reoc file\n";
+		return;
+	}
+	reoc_in_file >> block_num;
+	std::cout << "Block num:" << block_num << std::endl;
 	min_points = new point3d[block_num];
 	for (int i = 0; i < block_num; i++){
 		pos_type x, y, z, X, Y, Z;
 		id_type id;
-		read_block_num >> x >> y >> z >> X >> Y >> Z >> id;
+		reoc_in_file >> x >> y >> z >> X >> Y >> Z >> id;
 		min_points[id].x = x;
 		min_points[id].y = y;
 		min_points[id].z = z;
+
 	}
 	//std::cout << block_num << std::endl;
-	read_block_num.close();
+	std::cout << "framework width:" << framework_width << std::endl;
+	std::cout << "framework depth:" << framework_depth << std::endl;
+	std::cout << "framework height:" << framework_height << std::endl;
+
+	reoc_in_file.close();
 	CUDA_CALL(cudaMalloc(&min_points_device, sizeof(point3d)*block_num));
 	CUDA_CALL(cudaMemcpy(min_points_device, min_points, sizeof(point3d)*block_num, cudaMemcpyHostToDevice));
 	delete[] min_points;
 
-	int unreal_block_num = width_num*depth_num*height_num;
-	block_size = block_width*block_depth*block_height;
-#endif
+	//并不是真实的每边块的数量 而是以八叉树最小的叶节点分成的网格边长
+	assert(framework_width%block_width == 0);
+	assert(framework_depth%block_depth == 0);
+	assert(framework_height%block_height == 0);
 
-	volumeSize.x = real_width;
-	volumeSize.y = real_depth;
-	volumeSize.z = real_height;
+	width_num = framework_width / block_width;
+	depth_num = framework_depth / block_depth;
+	height_num = framework_height / block_height;
+
+
+	
+	volumeSize.x = data_width;
+	volumeSize.y = data_depth;
+	volumeSize.z = data_height;
+	std::cout << "Data side (3):" << data_width << " " << data_depth << " " << data_height << std::endl;
 
 
 	src_raw_address = disk_address + data_source + ".raw";
@@ -797,26 +770,30 @@ void readResource()
 
 
 
-	// 读取原始raw数据 test only
-
-
-	raw_src_host = new unsigned char[real_width * real_depth * real_height];
-	CUDA_CALL(cudaMalloc(&raw_src_device, real_width * real_depth * real_height * sizeof(unsigned char)));
+	// 读取原始raw数据
+	
+	CUDA_CALL(cudaMalloc(&raw_src_device, framework_width * framework_depth * framework_height * sizeof(unsigned char)));
 	std::ifstream f_src_in(src_raw_address, std::ios::binary);
-	if (f_src_in.is_open() == false) {
+	if (f_src_in.is_open() == true) {
+		raw_src_host = new unsigned char[framework_width * framework_depth * framework_height];
 		std::cout << "can not open src raw file\n";
-		return;
+		f_src_in.read((char*)(raw_src_host), framework_width * framework_depth * framework_height);
+		f_src_in.close();
+		CUDA_CALL(cudaMemcpy(raw_src_device, raw_src_host, framework_width * framework_depth * framework_height * sizeof(unsigned char), cudaMemcpyHostToDevice));
+		delete[] raw_src_host;
 	}
-	f_src_in.read((char*)(raw_src_host), real_width * real_depth * real_height);
-	f_src_in.close();
-	CUDA_CALL(cudaMemcpy(raw_src_device, raw_src_host, real_width * real_depth * real_height * sizeof(unsigned char), cudaMemcpyHostToDevice));
-	delete[] raw_src_host;
+	else {
+		std::cout << "Cannot find source .raw file\n";
+	}
 
 
 	// Part1: 初始化
-	std::cout << "Part1: Initializing..." << std::endl;
+
+	//Reading Transfer Function
+	
+	std::cout << "Reading Transfer Function\n";
 	CUDA_CALL(cudaMalloc(&data_trans_device, 4 * 255 * sizeof(float)));
-	data_trans_host = new float[4 * 255 * sizeof(float)];
+	data_trans_host = new float[4 * 255 * sizeof(float)];/*Malloc for transfer function*/
 	std::ifstream f_trans(trans_address);
 	if (f_trans.is_open() == false) {
 		std::cout << "can not open trans func file\n";
@@ -827,12 +804,13 @@ void readResource()
 	}
 	f_trans.close();
 	CUDA_CALL(cudaMemcpy(data_trans_device, data_trans_host, 4 * 255 * sizeof(float), cudaMemcpyHostToDevice));
-	delete[] data_trans_host;
+	delete[] data_trans_host;/*Delete Transfer function*/
+	std::cout << "Transfer Function Reading Finished\n\n";
 
 	// Part2: 读取sgmm
 	std::cout << std::endl << "Part2: Reading SGMMs..." << std::endl;
 	CUDA_CALL(cudaMalloc(&block_data_device, block_num * sizeof(Block)));
-	block_data_host = new Block[block_num];
+	block_data_host = new Block[block_num];/*Malloc for SGMM Cluster*/
 	std::ifstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	if (f_sgmm.is_open() == false) {
 		std::cout << "can not open sgmm file\n";
@@ -865,12 +843,14 @@ void readResource()
 	f_sgmm.close(); 
 	CUDA_CALL(cudaMemcpy(block_data_device, block_data_host, block_num * sizeof(Block), cudaMemcpyHostToDevice));
 	//printf("%d ---\n", block_data_device);
-	delete[] block_data_host;
+	delete[] block_data_host;/*Delete SGMM Cluster*/
+	std::cout << "Reading SGMM File Finished\n\n";
 
 	// Part3: 读取积分
-	std::cout << std::endl << "Part3: Reading integrations..." << std::endl;
+
+	std::cout << std::endl << "Reading integrations..." << std::endl;
 	CUDA_CALL(cudaMalloc(&all_block_integrations_device, block_num * sizeof(Integrations)));
-	all_block_integrations_host = new Integrations[block_num];
+	all_block_integrations_host = new Integrations[block_num];	/*Malloc for Integrations on host*/
 	std::ifstream f_in(integration_cluster_address, std::ios::binary);
 	if (f_in.is_open() == false) {
 		std::cout << "can not open integrations file\n";
@@ -882,40 +862,17 @@ void readResource()
 		}
 	}
 	CUDA_CALL(cudaMemcpy(all_block_integrations_device, all_block_integrations_host, block_num * sizeof(Integrations), cudaMemcpyHostToDevice));
-	delete[] all_block_integrations_host;
-
-	//Part4:读取索引
-	std::cout << std::endl << "Part4:Reading exoc file" << std::endl;
-	block_id_host = new id_type[unreal_block_num];
-	std::ifstream ocex_in_file(disk_address + data_source + ".ocex");
-	if (ocex_in_file.is_open() == false){
-		std::cout << "can not open .ocex file\n";
-		return;
-	}
-	for (int i = 0; i < unreal_block_num; i++){
-		ocex_in_file >> block_id_host[i];
-	}
-
-	//这里的unreal_block_num 可能与文件里的元素数量不匹配
-
-	ocex_in_file.close();
-	CUDA_CALL(cudaMalloc(&block_id_device, sizeof(id_type)*unreal_block_num));
-	CUDA_CALL(cudaMemcpy(block_id_device, block_id_host, sizeof(id_type)*unreal_block_num, cudaMemcpyHostToDevice));
-	delete[] block_id_host;
-
-
-	//Part4:读取每块起始坐标
-	
+	delete[] all_block_integrations_host;/*Delete Integrations on host*/
+	std::cout << "Reading Integrations Finished\n\n";
 }
 
-
-
-
-void volumeKernelLancher(float * d_vol, int3 volSize, int id, float4 params)
+void InitResources(float * d_vol, int3 volSize, int id, float4 params)
 {
 	//dim3 blockSize(TX, TY, TZ);
 	//dim3 gridSize((volSize.x + TX - 1) / TX, (volSize.y + TY - 1) / TY, (volSize.z + TZ - 1) / TZ);
 	//volumeKernel<<<gridSize, blockSize>>> (d_vol, volSize, id, params);
-	calcExp(.01f, -10.f, 40.f);
-	readResource();
+
+	calcExp(.01f, -10.f, 40.f);	//Compute exp table
+
+	readResource();		//Reading Integrations and id table
 }

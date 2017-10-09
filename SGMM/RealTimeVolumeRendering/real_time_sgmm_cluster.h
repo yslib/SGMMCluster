@@ -82,6 +82,8 @@ int ReadValueFromSrcRaw(unsigned char* raw_src_device,
 	int real_depth, 
 	int real_height);
 
+
+
 extern Integrations * all_block_integrations_device;
 extern Integrations * all_block_integrations_host;
 extern float * data_trans_device;
@@ -96,13 +98,13 @@ extern id_type * block_id_device;
 extern id_type * block_id_host;
 extern int side;
 
-extern int real_width;
-extern int real_depth;
-extern int real_height;
+extern pos_type framework_width;
+extern pos_type framework_depth;
+extern pos_type framework_height;
 
-extern int block_width;
-extern int block_depth;
-extern int block_height;
+extern pos_type block_width;
+extern pos_type block_depth;
+extern pos_type block_height;
 extern int block_size;
 
 extern int max_cluster_num;
