@@ -12,7 +12,7 @@ void keyborad(unsigned char key, int x, int y) {
 	if (key == 'D') { dist -= 1; }
 	if (key == 'z') {
 		zs = NZ;
-		theta = 0.f;
+		yaw = 0.f;
 		dist = 0.f;
 	}
 	if (key == 'v')method = 0;
@@ -30,10 +30,10 @@ void mouseMove(int x, int y) {
 	glutPostRedisplay();
 }
 void handleSpecialKeypress(int key, int x, int y) {
-	if (key == GLUT_KEY_LEFT)theta -= 0.1f;
-	if (key == GLUT_KEY_RIGHT)theta += 0.1f;
-	if (key == GLUT_KEY_UP)threshold += 0.1f;
-	if (key == GLUT_KEY_DOWN)threshold -= 0.1f;
+	if (key == GLUT_KEY_LEFT)yaw += 0.1f;
+	if (key == GLUT_KEY_RIGHT)yaw -= 0.1f;
+	if (key == GLUT_KEY_UP)pitch += 0.1f;
+	if (key == GLUT_KEY_DOWN)pitch -= 0.1f;
 	printf("Special key pressed\n");
 	glutPostRedisplay();
 }

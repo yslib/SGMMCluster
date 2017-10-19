@@ -20,7 +20,6 @@
 #include <cuda_gl_interop.h>
 
 
-
 //
 GLuint pbo = 0;
 GLuint tex = 0;
@@ -31,7 +30,7 @@ int id = 1;
 int method = 1;
 float *d_vol;
 float zs = NZ;
-float dist = 0.0f, theta = 0.f, threshold = 0.0f;
+float dist = 0.0f, yaw = 0.f, pitch = 0.0f;
 
 
 //FPS
@@ -64,7 +63,7 @@ void render()
 	cudaGraphicsResourceGetMappedPointer((void **)&d_out, NULL, cuda_pbo_resource);
 
 	//TODO:
-	kernelLauncher(d_out,d_vol, W, H,volumeSize,method,zs,theta,threshold,dist);
+	kernelLauncher(d_out,d_vol, W, H,volumeSize,method,zs,yaw,pitch,dist);
 	//END
 
 	cudaGraphicsUnmapResources(1, &cuda_pbo_resource, 0);

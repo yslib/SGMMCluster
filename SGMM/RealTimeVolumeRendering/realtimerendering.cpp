@@ -22,9 +22,18 @@
 #define CUDA_CALL(x) {const cudaError_t a =(x);\
 if(a != cudaSuccess){printf("\nCUdaError:%s(line:%d)\n",\
 cudaGetErrorString(a),__LINE__);cudaDeviceReset();}}
+
+#define CUDA_GET_LAST_ERROR {const cudaError_t a = cudaGetLastError();\
+if(a != cudaSuccess){printf("\nCUdaError:%s(line:%d)\n",\
+cudaGetErrorString(a),__LINE__);cudaDeviceReset();}}
+
+
 #else
 #define CUDA_CALL(x) (x)
+#define CUDA_GET_LAST_ERROR
 #endif
+
+
 
 
 //const int N = 64;
@@ -33,8 +42,8 @@ cudaGetErrorString(a),__LINE__);cudaDeviceReset();}}
 //const int TY = 8;
 //const int TZ = 8;
 //
-const int TX_2D = 32;
-const int TY_2D = 32;
+const int TX_2D = 8;
+const int TY_2D = 8;
 //
 //const int RAD = 1;
 
@@ -80,6 +89,15 @@ __device__ bool rayPlaneIntersect(Ray ray,float3 norm,float d,float * t) {
 __device__ float3 yRotate(float3 pos, float theta) {
 	const float c = cosf(theta), s = sinf(theta);
 	return make_float3(c*pos.x + s*pos.z, pos.y, -s*pos.x + c*pos.z);
+}
+__device__ float3 pitchYawRotation(float3 pos, float pitch, float yaw) {
+	const float cos_yaw = cosf(yaw);
+	const float sin_yaw = sinf(yaw);
+	const float cos_pitch = cosf(pitch);
+	const float sin_picth = sinf(pitch);
+	return make_float3(cos_yaw*pos.x - sin_yaw*pos.z,
+		-sin_picth*sin_yaw*pos.x + cos_pitch*pos.y - sin_picth*cos_pitch*pos.z,
+		cos_pitch*sin_yaw*pos.x + sin_picth*pos.y + cos_pitch*cos_yaw*pos.z);
 }
 
 __device__ float density(float * d_vol, int3 volSize, float3 pos) {
@@ -533,7 +551,7 @@ __global__ void renderKernel(uchar4 *d_out,
 	int method,
 	int zs,
 	float theta, 
-	float threshold,
+	float pitch,
 	float dist,
 	Block * block_data_device,
 	Integrations * all_block_integrations_device,
@@ -547,18 +565,22 @@ __global__ void renderKernel(uchar4 *d_out,
 	int block_height_device,
 	point3d * min_points_device) 
 {
+	//printf("In Rendering Kernel:\n");
 	int c = blockDim.x * blockIdx.x + threadIdx.x;
 	int r = blockDim.y * blockIdx.y + threadIdx.y;
 	int i = c + r*w;
 	if (c >= w || r >= h)return;
 	const uchar4 background = make_uchar4(255, 255, 255, 255);//Backgound color
-	float3 source = { 0,0,-zs };
-	//printf("%d\n", block_data_device);
-	float3 pix = scrIdxToPos(c, r, w, h, 2 * volSize.z - zs);
+	float3 source = { 0,0,zs };
+	//printf("In Kernel:%d\n", block_data_device);
+	float3 pix = scrIdxToPos(c, r, w, h, volSize.z/2 );
 	//float3 pix = { c - w / 2,r - h / 2,2 * volSize.z - zs };
 
-	source = yRotate(source, theta);
-	pix = yRotate(pix, theta);
+	//source = yRotate(source, theta);
+	//pix = yRotate(pix, theta);
+	source = pitchYawRotation(source,pitch, theta);
+	pix = pitchYawRotation(pix,pitch, theta);
+
 	float t0, t1;
 	const Ray pixRay = { source,pix - source };
 	float3 center = { volSize.x / 2.f,volSize.y / 2.f,volSize.z / 2.f }; 
@@ -571,6 +593,7 @@ __global__ void renderKernel(uchar4 *d_out,
 	if (hitBox == false)shade = background;
 	else {
 		if (t0 < 0.0f)t0 = 0.0f;
+		//printf("In rendering kernel hitted\n");
 		const Ray boxRay = { paramRay(pixRay,t0),paramRay(pixRay,t1) - paramRay(pixRay,t0) };
 		/*if (method == 1)
 			shade = sliceShader(d_vol, volSize, boxRay, threshold, dist, source);
@@ -580,12 +603,20 @@ __global__ void renderKernel(uchar4 *d_out,
 			shade = volumeRenderShader(d_vol, volSize, boxRay, threshold,NUMSTEPS);
 		else 
 		*/
-		shade = realTimeRenderForSGMMCluster(volSize, boxRay, 
+		shade = realTimeRenderForSGMMCluster(volSize,
+			boxRay, 
 			block_data_device, 
 			all_block_integrations_device,
 			raw_src_device, 
 			data_trans_device,
-			block_id_device,width,depth,block_width_device,block_depth_device,block_height_device,min_points_device);
+			block_id_device,
+			width,
+			depth,
+			block_width_device,
+			block_depth_device,
+			block_height_device,
+			min_points_device);
+
 
 	}
 	//printf("%d %d %d %d\n", width, depth, block_width_device, block_depth_device);
@@ -610,21 +641,27 @@ void kernelLauncher(uchar4 * d_out,
 	int3 volSize, 
 	int method, 
 	int zs,
-	float theta,
-	float threshold,
+	float yaw,
+	float pitch,
 	float dist)
 {
 	dim3 blockSize(TX_2D, TY_2D);
 	dim3 gridSize((w+ TX_2D - 1) / TX_2D, (h + TY_2D - 1) / TY_2D);
-	//std::cout << "blockSize.x" << blockSize.x << std::endl
-	//	<< "blockSize.y" << blockSize.y << std::endl
-	//	<< "gridSize.x" << gridSize.x << std::endl
-	//	<< "gridSize.y" << gridSize.y << std::endl
+	//std::cout << "blockSize.x:" << blockSize.x << std::endl
+	//	<< "blockSize.y:" << blockSize.y << std::endl
+	//	<< "gridSize.x:" << gridSize.x << std::endl
+	//	<< "gridSize.y:" << gridSize.y << std::endl
 	//	<< "w:" << w << std::endl
 	//	<< "h:" << h << std::endl
 	//	<< "VolSize.x:" << volSize.x << std::endl
 	//	<< "volSize.y:" << volSize.y << std::endl
 	//	<< "volSize.z:" << volSize.z << std::endl
+	//	<< "block_width:" << block_width << std::endl
+	//	<< "block_depth:" << block_depth << std::endl
+	//	<< "block_height:" << block_height << std::endl
+	//	<< "frame_width:" << framework_width << std::endl
+	//	<< "frame_depth:" << framework_depth << std::endl
+	//	<< "frame_height:" << framework_height << std::endl
 	//	<< "block_data_device:" << (int)block_data_device << std::endl
 	//	<< "all_block_integrations_device:" << (int)all_block_integrations_device << std::endl
 	//	<< "raw_src_device:" << (int)raw_src_device << std::endl
@@ -635,26 +672,30 @@ void kernelLauncher(uchar4 * d_out,
 	//	<< "dist:" << dist << std::endl;
 
 		
-	renderKernel<<<gridSize, blockSize >>>(
-		d_out, 
+	renderKernel <<<gridSize, blockSize >> > (
+		d_out,
 		d_vol,
-		w, h, 
+		w,
+		h,
 		volSize,
 		method,
 		zs,
-		theta, 
-		threshold, 
+		yaw,
+		pitch,
 		dist,
 		block_data_device,
 		all_block_integrations_device,
-		raw_src_device,data_trans_device,
-		block_id_device,framework_width,
+		raw_src_device, 
+		data_trans_device,
+		block_id_device, 
+		framework_width,
 		framework_depth,
 		block_width,
 		block_depth,
 		block_height,
 		min_points_device);
-	//printf("%d %d %d\n", real_depth, block_width, block_depth);
+	printf("%d %d %d\n", block_height, block_width, block_depth);
+	CUDA_GET_LAST_ERROR;
 	CUDA_CALL(cudaDeviceSynchronize());
 }
 
@@ -687,6 +728,8 @@ void readResource()
 	std::cin >> data_source;
 	std::cout << "input data size:" << std::endl;
 	std::cin >> data_width >> data_depth >> data_height;
+
+	zs = std::max(std::max(data_width, data_depth), data_height);
 	
 
 	//Reading block id and min block 

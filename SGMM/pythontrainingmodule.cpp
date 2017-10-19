@@ -27,7 +27,10 @@ int train_sgmm(int gc, char ** argv) {
 
 	std::string cmd{ "python C:/Users/ysl/Code/SGMM/SGMM/TrainSGMM.py"};
 	cmd += " "+disk_address+" "+file_name+" " + width + " " + depth + " " + height + " " + side + " " + file_num;
+	clock_t tbegin = clock();
 	system(cmd.c_str());
+	clock_t tend = clock();
+	std::cout << "Trainning time:" << (tend - tbegin) / CLOCKS_PER_SEC << "s\n";
 	std::cin.get();
 	return 0;
 }
@@ -51,7 +54,10 @@ int train_block_gmm(int argc, char **argv) {
 
 	std::string cmd{ "python C:/Users/ysl/Code/SGMM/SGMM/TrainBlockGMM.py" };
 	cmd += " " + disk_address + " " + file_name + " " + width + " " + depth + " " + height + " " + side + " " + file_num;
+	clock_t tbegin = clock();
 	system(cmd.c_str());
+	clock_t tend = clock();
+	std::cout << "Trainning time:" << (tend - tbegin) / CLOCKS_PER_SEC << "s\n";
 	std::cin.get();
 	return 0;
 }
@@ -112,8 +118,10 @@ int train_sgmm_cluster_octree(int gc,char **gv)
 
 	std::string cmd{ "python C:/Users/ysl/Code/SGMM/SGMM/TrainSGMMWithClusterOCTree.py" };
 	cmd += +" "+disk_address + " " + file_name + " " + width + " " + depth + " " + height + " " + file_num;
-
+	clock_t tbegin = clock();
 	std::system(cmd.c_str());
+	clock_t tend = clock();
+	std::cout << "Trainning time:" << (tend - tbegin) / CLOCKS_PER_SEC << "s\n";
 	std::cin.get();
 	return 0;
 }

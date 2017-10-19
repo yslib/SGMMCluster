@@ -10,7 +10,7 @@
 const int W = 600;			//Width of the picture
 const int H = 600;			//Height of the picture
 const int DELTA = 5;
-const int NX = 128, NY = 128, NZ = 256;
+const int NX = 128, NY = 128, NZ = 15;
 
 
 extern int2 loc;
@@ -18,7 +18,7 @@ extern bool dragMode;
 extern int id;
 extern int method;
 extern float *d_vol;
-extern float zs, dist, theta, threshold;
+extern float zs, dist, yaw, pitch;
 
 extern int3 volumeSize;
 extern float4 params;
