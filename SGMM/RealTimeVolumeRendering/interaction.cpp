@@ -43,12 +43,12 @@ void printInstrctions() {
 
 void createMenu()
 {
-	glutCreateMenu(mymenu);
-	glutAddMenuEntry("1", 0);
-	glutAddMenuEntry("2", 1);
-	glutAddMenuEntry("3", 2);
-	glutAddMenuEntry("4", 3);
-	glutAttachMenu(GLUT_RIGHT_BUTTON);
+	//glutCreateMenu(mymenu);
+	//glutAddMenuEntry("1", 0);
+	//glutAddMenuEntry("2", 1);
+	//glutAddMenuEntry("3", 2);
+	//glutAddMenuEntry("4", 3);
+	//glutAttachMenu(GLUT_RIGHT_BUTTON);
 }
 
 void mymenu(int val)

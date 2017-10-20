@@ -2,7 +2,8 @@
 #include "cuda_runtime.h"
 #include "realtimerendering.h"
 #include <GL\glew.h>
-#include <GL\glut.h>
+//#include <GL\glut.h>
+#include <Gl\freeglut.h>
 #include <cstdlib>
 #include <cstdio>
 
