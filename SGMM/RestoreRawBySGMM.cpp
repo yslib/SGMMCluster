@@ -518,6 +518,11 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	sgmmBlock* block_data;
 	//cudaMallocManaged(&block_data, block_num * sizeof(Block));
 	block_data = (sgmmBlock*)malloc(sizeof(sgmmBlock)*block_num);
+	if (block_data == nullptr) {
+		std::cout << "can not allocate memory for block. ";
+		std::cout << sizeof(sgmmBlock)*block_num / 1024 / 1024 << "m are needed.\n";
+		return 0;
+	}
 	std::cout << "Part1: Reading SGMMs..." << std::endl;
 	std::ifstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	if (f_sgmm.is_open() == false) {
