@@ -787,10 +787,15 @@ int subdivision(int argc, char ** argv) {
 	data_height = height;
 	data_depth = depth;
 
+	
 	//
 	width = next_pow_of_2(width);
 	depth = next_pow_of_2(depth);
 	height = next_pow_of_2(height);
+	size_t max_side = std::max(std::max(width, depth), height);
+	width = max_side;
+	depth = max_side;
+	height = max_side;
 
 	std::cout << "next_pow_of_2:" << width << " " << depth << " " << height << std::endl;
 
