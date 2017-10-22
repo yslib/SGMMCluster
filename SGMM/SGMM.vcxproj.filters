@@ -19,6 +19,7 @@
     <ClCompile Include="clip_raw_data.cpp" />
     <ClCompile Include="test_case_generate.cpp" />
     <ClCompile Include="funcs.cpp" />
+    <ClCompile Include="float2byte.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="commands.h" />

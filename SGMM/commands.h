@@ -37,4 +37,6 @@ int create_AABB_file(int argc, char ** argv);
 
 int RealTimeVolumeRender(int argc, char ** argv);
 
+int float2byte(int argc, char ** argv);
+
 #endif/*_COMMADS_H_*/

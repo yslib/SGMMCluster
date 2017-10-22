@@ -54,6 +54,7 @@ int main(int argc,char ** argv)
 	MenuConfig("13", "Generate test case", test_case_generate);
 	MenuConfig("14", "Create Bounding box file for sgmm and block gmm", create_AABB_file);
 	MenuConfig("15", "Draw bounding box for .raw file",draw_bounding_box);
+	MenuConfig("16", "Convert float file to byte file", float2byte);
 	//exec menu
 	ExecuteMenu();
 	return 0;

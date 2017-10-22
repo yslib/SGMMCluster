@@ -23,6 +23,7 @@
     <ClCompile Include="compressionratio.cpp" />
     <ClCompile Include="CudaDeviceQuery.cpp" />
     <ClCompile Include="draw_bounding_box.cpp" />
+    <ClCompile Include="float2byte.cpp" />
     <ClCompile Include="getopt.c" />
     <ClCompile Include="linktable.c" />
     <ClCompile Include="main.cpp" />
