@@ -402,6 +402,9 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 		//	}
 		//}
 		// Test code end
+		//if (block_data[block_index].bin_indexs_[final_bin_count] == 0) {
+		//	printf("%d %d\n", block_index, block_data[block_index].bin_indexs_[final_bin_count]);
+		//}
 		raw_result[calc_index] = block_data[block_index].bin_indexs_[final_bin_count] * (256 / bin_num) + 1;
 		//if (raw_result[calc_index] == 1 && block_index == 0) {
 		//	printf("%d %d %d %d\n", block_index, block_data[block_index].bin_indexs_[final_bin_count],final_bin_count,block_data[block_index].bin_num_);

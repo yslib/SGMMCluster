@@ -89,7 +89,12 @@ def read_block(index,all_data, width, depth, width_num, depth_num, block_size,si
 
 
 # train index th block data
-def train_single_block(block_index, block_data,block_size,max_bin_num,side,ubg):
+def train_single_block(block_index,
+                       block_data,
+                       block_size,
+                       max_bin_num,
+                       side,
+                       ubg):
     block = Block()
     count = [0] * max_bin_num
     train_data = [] * max_bin_num
@@ -161,7 +166,21 @@ def check_value(value_in):
 
 # train a part of original data
 # and save sgmm arguments into a txt file
-def train_blocks(disk_address,data_source,block_num,index, stride,src_raw_name, all_data, width, depth, width_num, depth_num, max_bin_num,block_size, side, ubg):
+def train_blocks(disk_address,
+                 data_source,
+                 block_num,
+                 index,
+                 stride,
+                 src_raw_name,
+                 all_data,
+                 width,
+                 depth,
+                 width_num,
+                 depth_num,
+                 max_bin_num,
+                 block_size,
+                 side,
+                 ubg):
     block_sgmm = [Block()] * stride
     end_block = (index+1)*stride
     end_index = stride
@@ -172,7 +191,7 @@ def train_blocks(disk_address,data_source,block_num,index, stride,src_raw_name, 
                 end_index = i
                 break
             block_data = read_block(index * stride + i,all_data,width, depth, width_num, depth_num, block_size,side)
-            block_sgmm[i] = train_single_block(index * stride + i, block_data,block_size,max_bin_num,side,ubg)
+            block_sgmm[i] = train_single_block(index * stride + i, block_data, block_size, max_bin_num, side, ubg)
 
     sgmm_output = disk_address + data_source + '_SGMM_Result_'+str(index)+'.txt'  # only sgmm arguments
 
@@ -180,6 +199,9 @@ def train_blocks(disk_address,data_source,block_num,index, stride,src_raw_name, 
     with open(sgmm_output, "w") as f_out:
         for i in range(0, end_index):
             # f_out.write(str(index * stride + i) + '###\n')  # test only
+            idx = index*stride+i
+            if idx == 20 or idx == 13 or id == 6 or idx == 0:
+                print("block_index:"+str(idx)+" bin num:"+str(block_sgmm[i].bin_num_))
             f_out.write(str(block_sgmm[i].bin_num_) + '\n')
             for bin_count in range(0, block_sgmm[i].bin_num_):
                 real_bin_index = block_sgmm[i].bin_indexs_[bin_count]
@@ -244,7 +266,7 @@ if __name__ == '__main__':
     ubg = 4  # max component number
     restore_raw = bytearray(width * depth * height)
     np.random.seed(1)
-    stride = total_num / process_num
+    stride = (total_num+process_num-1) / process_num
     f_all_data = open(src_raw_name, 'rb')
     f_all_data.seek(0, 0)
     all_data = bytearray(f_all_data.read())

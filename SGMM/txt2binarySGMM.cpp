@@ -21,7 +21,7 @@ struct Bin {
 };
 
 struct sgmmBlock {
-	int gauss_count_ = 0; // test only
+	int gauss_count_ = 0; 
 	unsigned char bin_num_ = 0;
 	unsigned char bin_indexs_[128];
 	Bin bins_[128]; // 
@@ -104,6 +104,7 @@ int txt2binarysgmm(int argc,char ** argv)
 	int total_gauss_count = 0;
 	int total_bin_count = 0;
 	//reading training text file
+	bool block_num_checked = false;
 	for (int i = 0; i < sgmm_file_num; i++) {
 		std::string sgmm_input_name = disk_address + data_source + "_SGMM_Result_" + Int2String(i) + ".txt";
 		std::cout << "Reading file " << sgmm_input_name << "..." << std::endl;
@@ -113,8 +114,6 @@ int txt2binarysgmm(int argc,char ** argv)
 			std::cout << "Reading SGMM file failed.";
 			exit(1);
 		}
-
-	
 		//
 		for (int j = 0; j < stride; j++) {
 			int block_index = i * stride + j;		//absolute index for all files
@@ -127,6 +126,8 @@ int txt2binarysgmm(int argc,char ** argv)
 			
 			block_data[block_index].bin_num_ = bin_num;
 			total_bin_count += bin_num;
+
+			//
 			for (int k = 0; k < bin_num; k++) {
 
 				int real_index = 0;
@@ -169,12 +170,18 @@ int txt2binarysgmm(int argc,char ** argv)
 			}
 			count++;
 			if (count == block_num) {
+				std::cout << "block number checked\n";
+				block_num_checked = true;
 				break;
 			}
 		}
 
 		sgmm_input.close();
 		//remove(sgmm_input_name.c_str());
+	}
+	if (block_num_checked == false) {
+		std::cout << "block number is wrong\n";
+		exit(0);
 	}
 	std::cout << "block in total:" << count << std::endl;
 	if (count == 0) {
@@ -186,30 +193,39 @@ int txt2binarysgmm(int argc,char ** argv)
 	for (int i = 0; i < block_num; i++) {
 		total_count += block_data[i].gauss_count_;
 	}
+	std::cout << "the maximum size of a block:" << sizeof(sgmmBlock) << std::endl;
 	std::cout << "average gauss count for every block = " << total_count / block_num << std::endl;
 	std::cout << "total gauss count :" << total_gauss_count << std::endl;
 	std::cout << "total bin count:" << total_bin_count << std::endl;
-	std::cout << "Bins per Blocks\n" << total_bin_count / block_num << std::endl;
+	std::cout << "Bins per Blocks:" << total_bin_count / block_num << std::endl;
 	// Part2: writing as binary file
+	int total_footprint = 0;
 	std::ofstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	for (int block_index = 0; block_index < block_num; block_index++) {
 		f_sgmm.write((char*)&(block_data[block_index].bin_num_), sizeof(unsigned char));
+		total_footprint += sizeof(unsigned char);
 		for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
 			int real_bin_index = block_data[block_index].bin_indexs_[bin_count];
 			f_sgmm.write((char*)&(real_bin_index), sizeof(unsigned char));
 			f_sgmm.write((char*)&(block_data[block_index].bins_[real_bin_index].probability_), sizeof(float));
 			f_sgmm.write((char*)&(block_data[block_index].bins_[real_bin_index].gauss_count_), sizeof(unsigned char));
+			total_footprint += sizeof(unsigned char) + sizeof(float) + sizeof(unsigned char);
+
 			for (int gauss_index = 0; gauss_index < block_data[block_index].bins_[real_bin_index].gauss_count_; gauss_index++) {
 				f_sgmm.write((char*)&(block_data[block_index].bins_[real_bin_index].gausses_[gauss_index].weight_), sizeof(float));
+				total_footprint += sizeof(float);
 				for (int i = 0; i < 3; i++) {
 					f_sgmm.write((char*)&(block_data[block_index].bins_[real_bin_index].gausses_[gauss_index].mean_[i]), sizeof(float));
+					total_footprint += sizeof(float);
 				}
 				for (int i = 0; i < 6; i++) {
 					f_sgmm.write((char*)&(block_data[block_index].bins_[real_bin_index].gausses_[gauss_index].covariance_[i]), sizeof(float));
+					total_footprint += sizeof(float);
 				}
 			}
 		}
 	}
+	std::cout << "total footprint:" << total_footprint / 1024 / 1024 << std::endl;
 	f_sgmm.close();
 	std::cin.get();
 	return 0;
