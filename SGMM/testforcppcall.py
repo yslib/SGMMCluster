@@ -7,22 +7,18 @@ import numpy as np
 import os
 import math
 import sys
+import time
 
 def my_test(index):
     print("this is process:"+str(index))
 
 
 if __name__ == '__main__':
-    print("asdf")
-    proc =[]
-    process_num = 5
-    for i in range(0, process_num):
-        p = Process(target=my_test, args=(i,))
-        p.start()
-        proc.append(p)
+    begin_time = time.time();
 
-    for p in proc:
-        p.join()
-
+    print time.strftime('Training done at %Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    print time.strftime('Training costs: %Y-%m-%d %H:%M:%S', time.localtime(end_time - begin_time))
+    end_time = time.time()
+    print (end_time-begin_time);
 
 

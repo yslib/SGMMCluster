@@ -202,9 +202,9 @@ if __name__ == '__main__':
     print("stride:"+str(stride))
 
     read_all_data(result_disk_address + data_source + '.raw', data)
-    logging.debug(data)
-    begin_time = time.localtime(time.time())
 
+    begin_time = time.localtime(time.time())
+    cpu_time_begin = time.clock()
     print("total_num = " + str(total_num))
     proc_record = []
     for i in range(0, process_num):
@@ -225,6 +225,9 @@ if __name__ == '__main__':
     for p in proc_record:
         p.join()
     print("training GMM done.")
-    print time.strftime('Training begin at %Y-%m-%d %H:%M:%S',begin_time)
+    cpu_time_end = time.clock()
+    print time.strftime('Training began at %Y-%m-%d %H:%M:%S',begin_time)
+    print time.strftime('Training finished at %Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+    print("cpu time cost in python:" + str(cpu_time_end - cpu_time_begin)+"s.")
     # train_single_block(73800)
 

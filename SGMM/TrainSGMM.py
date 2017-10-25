@@ -272,6 +272,7 @@ if __name__ == '__main__':
     all_data = bytearray(f_all_data.read())
     all_hit = [0] * width * depth * height
     begin_time = time.localtime(time.time())
+    cpu_time_begin = time.clock()
     proc_record = []
     for i in range(0, process_num):  # a block / 3 seconds
         p = Process(target=train_blocks, args=(disk_address,
@@ -296,7 +297,11 @@ if __name__ == '__main__':
         p.join()
     
     print("training SGMM done.")
-    print time.strftime('Training begin at %Y-%m-%d %H:%M:%S', begin_time)
+    cpu_time_end = time.clock();
+    print time.strftime('Training began at %Y-%m-%d %H:%M:%S', begin_time)
+    print time.strftime('Training finished at %Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+
+    print("cpu time cost in python :"+str(cpu_time_end-cpu_time_begin)+"s.")
     # with open(src_raw_name, "rb") as f_src:
     #     single_block_data = read_block(3500)
     #     train_single_block(3500, single_block_data)

@@ -477,6 +477,7 @@ if __name__ == '__main__':
     print(len(all_data))
     all_hit = [0] * width * depth * height
     begin_time = time.localtime(time.time())
+    cpu_time_begin = time.clock()
     for loop_index in [10]:
 
         print("loop_index = " + str(loop_index))
@@ -503,8 +504,10 @@ if __name__ == '__main__':
         for p in proc_record:
             p.join()
         print("training SGMM done.")
-        print time.strftime('Training done at %Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        cpu_time_end = time.clock()
         print time.strftime('Training begin at %Y-%m-%d %H:%M:%S', begin_time)
+        print time.strftime('Training done at %Y-%m-%d %H:%M:%S', time.localtime(time.time()))
+        print("cpu time cost in python:" + str(cpu_time_end - cpu_time_begin)+".s")
 
         # single_block_data = read_block(5764)
         # train_single_block(5764, single_block_data, loop_index)
