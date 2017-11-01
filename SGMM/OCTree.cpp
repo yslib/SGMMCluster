@@ -23,6 +23,9 @@ static std::size_t min_side;
 
 static voxel_type * volume_data;
 
+const int max_cluster_num = 12;
+const int min_cluster_num = 6;
+
 //基础数据结构
 //3D point
 
@@ -40,12 +43,14 @@ struct octree_node {
 	bool valid;
 	point3d max_data_point;
 	point3d min_data_point;
+	double ent;
+	
 
 	octree_node(pos_type x, pos_type y, pos_type z, pos_type X, pos_type Y, pos_type Z, bool v = true, id_type i = -1) :
-		min_point{ x, y, z }, max_point{ X, Y, Z }, id{ i }, children{}, parent{}, valid{ v }, min_data_point{ x, y, z }, max_data_point{ X, Y, Z }
+		min_point{ x, y, z }, max_point{ X, Y, Z }, id{ i }, children{}, parent{}, valid{ v }, min_data_point{ x, y, z }, max_data_point{ X, Y, Z }, ent{0.0}
 	{}
 	octree_node(pos_type x, pos_type y, pos_type z, pos_type X, pos_type Y, pos_type Z, pos_type d_x, pos_type d_y, pos_type d_z, pos_type d_X, pos_type d_Y, pos_type d_Z, bool v = true, id_type i = -1) :
-		min_point{ x, y, z }, max_point{ X, Y, Z }, min_data_point{ d_x, d_y, d_z }, max_data_point{ d_X, d_Y, d_Z }, id{ i }, children{}, valid{ v }, parent{}
+		min_point{ x, y, z }, max_point{ X, Y, Z }, min_data_point{ d_x, d_y, d_z }, max_data_point{ d_X, d_Y, d_Z }, id{ i }, children{}, valid{ v }, parent{}, ent{0.0}
 	{}
 	octree_node(const point3d & start, const point3d & end, id_type i = -1) :
 		octree_node(start.x, start.y, start.z, end.x, end.y, end.z, i)
@@ -111,7 +116,7 @@ public:
 		_width{ width }, _depth{ depth }, _height{ height }, _size{ width*depth*height } {
 	}
 	entropy() = delete;
-	bool operator()(voxel_type * vol, const octree_node * root) {
+	bool operator()(voxel_type * vol,const octree_node * root) {
 		auto xmin = root->min_data_point.x;
 		auto ymin = root->min_data_point.y;
 		auto zmin = root->min_data_point.z;
@@ -131,16 +136,25 @@ public:
 				}
 			}
 		}
-		for (auto z = zmin; z < zmax; z++) {
-			for (auto y = ymin; y < ymax; y++) {
-				for (auto x = xmin; x < xmax; x++) {
-					int index = x + y*data_width + z*data_width*data_depth;
-					int scalar = (unsigned char)vol[index];
-					double prob = static_cast<double>(count[scalar]) / total;
-					ent += prob * std::log(prob) / std::log(2);
-				}
+		//for (auto z = zmin; z < zmax; z++) {
+		//	for (auto y = ymin; y < ymax; y++) {
+		//		for (auto x = xmin; x < xmax; x++) {
+		//			int index = x + y*data_width + z*data_width*data_depth;
+		//			int scalar = (unsigned char)vol[index];
+		//			double prob = static_cast<double>(count[scalar]) / total;
+		//			ent += prob * std::log(prob) / std::log(2);
+		//		}
+		//	}
+		//}
+		for (int i = 0; i < 256; i++) {
+			if (count[i] != 0) {
+				double prob = static_cast<double>(count[i]) / total;
+				double logprob = std::log(prob) / std::log(2);
+				ent += prob *logprob;
 			}
+
 		}
+		const_cast<octree_node *>(root)->ent = -ent;
 		std::cout << -ent << std::endl;
 		return (-ent >= threshold);
 	}
@@ -532,6 +546,18 @@ void extend_regular_octree(octree_node * root, int current_height, int max_heigh
 	}
 }
 
+void destroy_octree(octree_node * root) {
+	if (root == nullptr)return;
+	if (is_leaf(root) == true) {
+		delete root;
+	}
+	else {
+		for (int i = 0; i < 8; i++) {
+			destroy_octree(root->children[i]);
+		}
+	}
+}
+
 bool save_leaves_text(const std::string & path, const std::string & file_name, const std::vector<octree_node*> & leaves, std::size_t width, std::size_t depth, std::size_t height) {
 	std::size_t total_size = width*depth*height;
 	id_type * id_table = new int[total_size];
@@ -630,9 +656,18 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 	if (out_file.is_open() == false) {
 		return false;
 	}
+
+	std::ofstream out_file_cluster_num(path + file_name + ".noc");
+	if (out_file_cluster_num.is_open() == false) {
+		std::cout << "can't not create file for cluster num\n";
+		return false;
+	}
+
 	out_file << leaves.size() << std::endl;
 	int id = 0;
 	int data_count = 0;
+	double min_ent = 99999999;
+	double max_ent = -1;
 	for (const auto item : leaves) {
 		if (item->valid == false) {
 			std::cout << "error:" << __LINE__ << std::endl;
@@ -660,11 +695,15 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 				}
 			}
 		}
+		min_ent = std::min(min_ent, item->ent);
+		max_ent = std::max(max_ent, item->ent);
 #ifdef INPUT
 		out_file << dxmin << " " << dymin << " " << dzmin << " " << dxmax << " " << dymax << " " << dzmax << " "/*<< xmin << " " << ymin << " " << zmin << " " << xmax << " " << ymax << " " << zmax << " " */ << item->id << std::endl;
 #endif
+
 		id++;
 	}
+	std::cout << "max entropy:" << max_ent << "\n" << "min entropy:" << min_ent << std::endl;
 	std::cout << total_size << " " << data_count << std::endl;
 	out_file.close();
 	std::ofstream out_table_file(path + file_name + ".reidt");
@@ -676,11 +715,25 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 		out_table_file << id_table[i] << std::endl;
 	}
 #endif
+	assert(max_cluster_num != min_cluster_num);
+	double delta_ent = (max_ent - min_ent) / (max_cluster_num - min_cluster_num);
+	if (min_ent < max_ent) {
+		for (const auto item : leaves) {
+			int cluster_num = (item->ent - min_ent) / delta_ent + min_cluster_num;
+			if (cluster_num > max_cluster_num)
+				cluster_num = max_cluster_num;
+			out_file_cluster_num<< cluster_num << std::endl;
+		}
+	}
+
+	out_file_cluster_num.close();
 	//out_table_file.write((const char *)id_table,sizeof(id_type)*total_size);
 	out_table_file.close();
 	delete[] id_table;
 	return true;
 }
+
+
 
 bool re_save_exleaves_text(const std::string & path,
 	const std::string & file_name,
@@ -890,5 +943,6 @@ int subdivision(int argc, char ** argv) {
 
 	std::cin.get();
 	delete[] volume_data;
+	destroy_octree(root);
 	return 0;
 }

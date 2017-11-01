@@ -254,7 +254,7 @@ def CH(k_means, train_data):
 
 def train_single_block(block_index, block_data, max_cluster_num, block_width, block_depth, block_height, cluster_weights, ubg):
     cluster_data = []
-    count = [0] * max_cluster_num
+    count = [0] * max_cluster_num[block_index]
     non_zero_count = 0
     for z in range(0, block_height):
         for y in range(0, block_depth):
@@ -286,9 +286,9 @@ def train_single_block(block_index, block_data, max_cluster_num, block_width, bl
         #         max_score = present_score
         ############
 
-        kmeans = KMeans(n_clusters=max_cluster_num, max_iter=3000).fit(cluster_data)
+        kmeans = KMeans(n_clusters=max_cluster_num[block_index], max_iter=3000).fit(cluster_data)
         final_kmeans = kmeans
-        final_cluster_num = max_cluster_num
+        final_cluster_num = max_cluster_num[block_index]
     else:
         final_cluster_num = 0
 
@@ -337,7 +337,19 @@ def train_single_block(block_index, block_data, max_cluster_num, block_width, bl
 
 debug_info = []
 
-def train_blocks(result_disk_address, data_source, total_num, index, stride, block_info, max_cluster_num, src_raw_name, all_data, width, depth, cluster_weights, ubg):
+def train_blocks(result_disk_address,
+                 data_source,
+                 total_num,
+                 index,
+                 stride,
+                 block_info,
+                 max_cluster_num,
+                 src_raw_name,
+                 all_data,
+                 width,
+                 depth,
+                 cluster_weights,
+                 ubg):
     number_in_block = total_num - index*stride
     block_sgmm = [Block()] * stride
     # f_debug=open(result_disk_address+data_source+str(index)+".pydbg","w")
@@ -412,6 +424,17 @@ def read_block_info_data(path):
         block_info.append(b)
     return block_info
 
+def read_cluster_num(path):
+    if not os.path.exists(path):
+        print('noc file doesnt exist')
+        exit(0)
+
+    f_noc = open(path)
+    lines = f_noc.readlines()
+    cluster_num = []
+    for line in lines:
+        cluster_num.append(int(line))
+    return cluster_num
 
 # train all block, parallel computing, assign into 4 cpu kernel
 if __name__ == '__main__':
@@ -478,8 +501,9 @@ if __name__ == '__main__':
     all_hit = [0] * width * depth * height
     begin_time = time.localtime(time.time())
     cpu_time_begin = time.clock()
-    for loop_index in [10]:
 
+    cluster_num = read_cluster_num(result_disk_address + data_source + ".noc")
+    for loop_index in [10]:
         print("loop_index = " + str(loop_index))
         proc_record = []
         for i in range(0, process_num):  # a block / 3 seconds
@@ -491,7 +515,7 @@ if __name__ == '__main__':
                                             i,
                                             stride,
                                             block_info,
-                                            loop_index,
+                                            cluster_num,        #loop_index
                                             src_raw_name,
                                             all_data,
                                             width,
