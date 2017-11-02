@@ -29,6 +29,11 @@ cudaGetErrorString(a),__LINE__);cudaDeviceReset();}}
 
 //#define BIN_NUM_EXISTS_CHECK
 
+//#define TEMP_P
+//
+//#define TEMP_P2
+//
+//#define D_COORD
 
 
 
@@ -123,7 +128,15 @@ static double CalcSGMM(double* local_pos, int gauss_count, sgmmBlock* block_data
 
 //
 __global__
-void CalcIntegrationsNumerator(sgmmIntegrations* all_block_integrations, sgmmBlock* block_data, int side, int n, int block_num, int bin_num, double * temp_p, double * temp_p2) {
+void CalcIntegrationsNumerator(sgmmIntegrations* all_block_integrations,
+	sgmmBlock* block_data,
+	int block_index_offset,
+	int side, 
+	int n,
+	int block_num,
+	int bin_num,
+	double * temp_p,
+	double * temp_p2) {
 	
 	double offset = 0.000;
 	//bin index
@@ -133,6 +146,13 @@ void CalcIntegrationsNumerator(sgmmIntegrations* all_block_integrations, sgmmBlo
 	//printf("%d\n", calc_index);
 	int block_index = calc_index / bin_num;
 	int bin_index = calc_index - block_index * bin_num;
+
+	int absolute_block_index =block_index+block_index_offset;
+
+#ifdef TEMP_P
+	temp_p[absolute_block_index] = block_index;
+#endif
+
 	// Test code begin
 	//if (block_index == 2500 && bin_index == 0) {
 	//	all_block_integrations[block_index].integration_numerator[bin_index] = 7.77777777;
@@ -154,7 +174,7 @@ void CalcIntegrationsNumerator(sgmmIntegrations* all_block_integrations, sgmmBlo
 
 	//if the bin has no gaussian component,the integration will be 0
 	if (block_data[block_index].bins_[bin_index].gauss_count_ == 0) {
-		all_block_integrations[block_index].integration_numerator[bin_index] = 0.0;
+		all_block_integrations[absolute_block_index].integration_numerator[bin_index] = 0.0;
 		return;
 	}
 
@@ -170,13 +190,23 @@ void CalcIntegrationsNumerator(sgmmIntegrations* all_block_integrations, sgmmBlo
 		}
 	}
 
-	all_block_integrations[block_index].integration_numerator[bin_index] = numerator;
+	all_block_integrations[absolute_block_index].integration_numerator[bin_index] = numerator;
 
 	//printf("%f\n", numerator);
 }
 
 __global__
-void CalcIntegrationsDenominator(sgmmIntegrations* all_block_integrations, sgmmBlock* block_data, int side, int n, int block_num, int bin_num, int loop_index, int integration_scale, double * temp_p, double * temp_p2) {
+void CalcIntegrationsDenominator(sgmmIntegrations* all_block_integrations, 
+	sgmmBlock* block_data,
+	int block_index_offset,
+	int side,
+	int n,
+	int block_num, 
+	int bin_num,
+	int loop_index,
+	int integration_scale,
+	double * temp_p,
+	double * temp_p2) {
 
 
 	double offset = 0.000;
@@ -187,6 +217,11 @@ void CalcIntegrationsDenominator(sgmmIntegrations* all_block_integrations, sgmmB
 	int block_index = calc_index / bin_num;
 	int bin_index = calc_index - block_index * bin_num;
 
+	int absolute_block_index = block_index + block_index_offset;
+
+#ifdef TEMP_P
+	temp_p2[absolute_block_index] = block_index;
+#endif
 
 	bool exist = false;
 	for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
@@ -202,13 +237,13 @@ void CalcIntegrationsDenominator(sgmmIntegrations* all_block_integrations, sgmmB
 
 
 	if (block_data[block_index].bins_[bin_index].gauss_count_ == 0) {
-		all_block_integrations[block_index].integration_denominator[bin_index] += 0.0;
+		all_block_integrations[absolute_block_index].integration_denominator[bin_index] += 0.0;
 		if (loop_index == integration_scale*integration_scale*integration_scale - 1) {
-			if (all_block_integrations[block_index].integration_denominator[bin_index] == 0) {
-				all_block_integrations[block_index].integration_value[bin_index] = 0.0;
+			if (all_block_integrations[absolute_block_index].integration_denominator[bin_index] == 0) {
+				all_block_integrations[absolute_block_index].integration_value[bin_index] = 0.0;
 			}
 			else {
-				all_block_integrations[block_index].integration_value[bin_index] = all_block_integrations[block_index].integration_numerator[bin_index] / all_block_integrations[block_index].integration_denominator[bin_index];
+				all_block_integrations[absolute_block_index].integration_value[bin_index] = all_block_integrations[absolute_block_index].integration_numerator[bin_index] / all_block_integrations[absolute_block_index].integration_denominator[bin_index];
 				
 			}
 		}
@@ -231,15 +266,15 @@ void CalcIntegrationsDenominator(sgmmIntegrations* all_block_integrations, sgmmB
 			}
 		}
 	}
-	all_block_integrations[block_index].integration_denominator[bin_index] += denominator;
+	all_block_integrations[absolute_block_index].integration_denominator[bin_index] += denominator;
 	//printf("d: %f\n", denominator);
 	//printf("inter result:%f\n", all_block_integrations[block_index].integration_denominator[bin_index]);
 	if (loop_index == integration_scale*integration_scale*integration_scale - 1) {
-		if (all_block_integrations[block_index].integration_numerator[bin_index] == 0) {
-			all_block_integrations[block_index].integration_value[bin_index] = 0.0;
+		if (all_block_integrations[absolute_block_index].integration_numerator[bin_index] == 0) {
+			all_block_integrations[absolute_block_index].integration_value[bin_index] = 0.0;
 		}
 		else {
-			all_block_integrations[block_index].integration_value[bin_index] = all_block_integrations[block_index].integration_numerator[bin_index] / all_block_integrations[block_index].integration_denominator[bin_index];
+			all_block_integrations[absolute_block_index].integration_value[bin_index] = all_block_integrations[absolute_block_index].integration_numerator[bin_index] / all_block_integrations[absolute_block_index].integration_denominator[bin_index];
 			//printf(" final result:%f %f %f\n", all_block_integrations[block_index].integration_numerator[bin_index],
 			//	all_block_integrations[block_index].integration_denominator[bin_index], 
 			//	all_block_integrations[block_index].integration_value[bin_index]);
@@ -250,34 +285,75 @@ void CalcIntegrationsDenominator(sgmmIntegrations* all_block_integrations, sgmmB
 
 // »Ö¸´Ò»¸öÌåËØ
 __global__
-void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int height, int side, int n, int bin_num, sgmmBlock* block_data, double* temp_p, double* temp_p2, sgmmIntegrations* all_block_integrations, int sample_choice) {
+void sgmmRestoreVoxel(unsigned char * raw_result,
+	int width,
+	int depth,
+	int height,
+	int side,
+	int n,
+	int bin_num,
+	sgmmBlock* block_data,
+	int block_index_offset,
+	long calc_index_offset,
+	int voxel_boundary,
+	double* temp_p,
+	double* temp_p2, 
+	sgmmIntegrations* all_block_integrations, 
+	int sample_choice,
+	int *min_coords) {
+
 	
 	//printf("1\n");
 	//for every voxel
-	long calc_index = blockIdx.x * blockDim.x + threadIdx.x;
-	if (calc_index >= width*depth*height)
-		return;
-	//global coordinate for every voxel
-	int global_height_pos = calc_index / (depth * width);
-	int global_depth_pos = (calc_index - global_height_pos * depth * width) / width;
-	int global_width_pos = calc_index - global_height_pos * depth * width - global_depth_pos * width;
+	long relative_calc_index = blockIdx.x * blockDim.x + threadIdx.x;
 
+	if (relative_calc_index >= voxel_boundary)return;
+
+	long calc_index = blockIdx.x * blockDim.x + threadIdx.x + calc_index_offset;
+
+	if (calc_index >= width*depth*height)return;
+
+	int block_index = calc_index / (side*side*side);
+	int relative_block_index = block_index - block_index_offset;
+
+	//global coordinate for every voxel
+	//int global_height_pos = calc_index / (depth * width);
+	//int global_depth_pos = (calc_index - global_height_pos * depth * width) / width;
+	//int global_width_pos = calc_index - global_height_pos * depth * width - global_depth_pos * width;
 	//block coordinate
-	int height_index = global_height_pos / side;
-	int depth_index = global_depth_pos / side;
-	int width_index = global_width_pos / side;
+
+
 	//block index
-	int block_index = height_index * ((width / side) * (depth / side)) + depth_index * (width / side) + width_index;
+
+
+	int height_block_num = width / side;
+	int depth_block_num = depth / side;
+	int width_block_num = height / side;
+
+	int height_block_index = block_index / (width_block_num*depth_block_num);
+	int depth_block_index = (block_index - height_block_index*width_block_num*depth_block_num)/width_block_num;
+	int width_block_index = block_index - height_block_index*width_block_num*depth_block_num - depth_block_index*width_block_num;
+
+
+
 	//if (block_index == 0) {
 	//	printf("%d\n", block_data[block_index].bin_num_);
 	//}
+#ifdef D_COORD
+	//min_coords[3*block_index] = width_block_index;
+	//min_coords[3*block_index + 1] = depth_block_index;
+	//min_coords[3*block_index + 2] = height_block_index;
+#endif
 
 	double local_pos[3];
 	//local coordinate for every voxel
-	local_pos[0] = global_width_pos - width_index * side;  //x
-	local_pos[1] = global_depth_pos - depth_index * side;  //y
-	local_pos[2] = global_height_pos - height_index * side; //z
-
+	int calc_in_block = calc_index % (side*side*side);
+	int z = calc_in_block / (side*side);
+	int y = (calc_in_block - z*side*side) / side;
+	int x = calc_in_block - z*side*side - y*side;
+	local_pos[0] = x;
+	local_pos[1] = y;
+	local_pos[2] = z;
 
 	double sgmmbi_l[128];
 	double P[128];
@@ -286,15 +362,15 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 		P[i] = 0.0;
 	}
 
-	for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
-		int real_index = block_data[block_index].bin_indexs_[bin_count];
+	for (int bin_count = 0; bin_count < block_data[relative_block_index].bin_num_; bin_count++) {
+		int real_index = block_data[relative_block_index].bin_indexs_[bin_count];
 		//
-		if (block_data[block_index].bins_[real_index].probability_ == 0) {
+		if (block_data[relative_block_index].bins_[real_index].probability_ == 0) {
 			continue;
 		}
 
-		int gauss_count = block_data[block_index].bins_[real_index].gauss_count_;
-		sgmmbi_l[real_index] = CalcSGMM(local_pos, gauss_count, block_data, block_index, real_index, n);
+		int gauss_count = block_data[relative_block_index].bins_[real_index].gauss_count_;
+		sgmmbi_l[real_index] = CalcSGMM(local_pos, gauss_count, block_data, relative_block_index, real_index, n);
 	    //if (block_index == 0 && real_index == 100)printf("---%d %f %d\n",real_index,sgmmbi_l[real_index],bin_count);
 	}
 
@@ -311,14 +387,14 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 	//}
 
 	//////////////////////////////////////////////////////////////////////////
-	for (int bin_count = 0; bin_count < block_data[block_index].bin_num_; bin_count++) {
-		int real_index = block_data[block_index].bin_indexs_[bin_count];
+	for (int bin_count = 0; bin_count < block_data[relative_block_index].bin_num_; bin_count++) {
+		int real_index = block_data[relative_block_index].bin_indexs_[bin_count];
 		if (sgmmbi_l[real_index] == 0 || all_block_integrations[block_index].integration_value[real_index] == 0) {
 			P[real_index] = 0.0;
 			//if (block_index == 0 && bin_count == 100)printf("+++%d %f-%f\n", bin_count, sgmmbi_l[real_index], all_block_integrations[block_index].integration_value[real_index]);
 		}
 		else {
-			P[real_index] = sgmmbi_l[real_index] * (block_data[block_index].bins_[real_index].probability_ / all_block_integrations[block_index].integration_value[real_index]); //
+			P[real_index] = sgmmbi_l[real_index] * (block_data[relative_block_index].bins_[real_index].probability_ / all_block_integrations[block_index].integration_value[real_index]); //
 			//if (block_index == 0 && bin_count == 100)printf("&&&%f ", block_data[block_index].bins_[bin_count].probability_);
 		}
 		//if (block_index == 0 && bin_count == 100)printf("asdf\n");
@@ -326,24 +402,29 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 	//////////////////////////////////////////////////////////////////////////
 	//
 	double sum_p = 0.0;
-	for (int i = 0; i < block_data[block_index].bin_num_; i++) {
-		int real_index = block_data[block_index].bin_indexs_[i];
+	for (int i = 0; i < block_data[relative_block_index].bin_num_; i++) {
+		int real_index = block_data[relative_block_index].bin_indexs_[i];
 		sum_p += P[real_index];
 	}
-	for (int i = 0; i < block_data[block_index].bin_num_; i++) {
-		int real_index = block_data[block_index].bin_indexs_[i];
+	for (int i = 0; i < block_data[relative_block_index].bin_num_; i++) {
+		int real_index = block_data[relative_block_index].bin_indexs_[i];
 		P[real_index] /= sum_p;
 	}
 
 
 	//
+
+	int result_x = width_block_index*side + x;
+	int result_y = depth_block_index*side + y;
+	int result_z = height_block_index*side + z;
+	int result_calc = result_z*width*depth + result_y*width + result_x;
 	int	final_bin_count = 0;
 	if (sample_choice == 1) { //
 		curandState state;
 		curand_init(calc_index, 100, 0, &state);
 		double sample = curand_uniform(&state);
 		double total_sum = 0.0;
-		for (int i = 0; i < block_data[block_index].bin_num_; i++) {
+		for (int i = 0; i < block_data[relative_block_index].bin_num_; i++) {
 			total_sum += P[i];
 			if (total_sum > sample) {
 				final_bin_count = i;
@@ -353,8 +434,8 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 	}
 	else if (sample_choice == 2) { //
 		double max_p = P[0];
-		for (int i = 1; i < block_data[block_index].bin_num_; i++) {
-			int ri = block_data[block_index].bin_indexs_[i];
+		for (int i = 1; i < block_data[relative_block_index].bin_num_; i++) {
+			int ri = block_data[relative_block_index].bin_indexs_[i];
 			if (P[ri] > max_p) {
 				max_p = P[ri];
 				final_bin_count = i;
@@ -362,17 +443,17 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 		}
 	}
 	else if (sample_choice == 3) { //
-		raw_result[calc_index] = 0.0;
-		for (int i = 0; i < block_data[block_index].bin_num_; i++) {
-			raw_result[calc_index] += P[i] * (i*(256 / bin_num) + 1);
+		raw_result[result_calc] = 0.0;
+		for (int i = 0; i < block_data[relative_block_index].bin_num_; i++) {
+			raw_result[result_calc] += P[i] * (i*(256 / bin_num) + 1);
 		}
 	}
 	else if (sample_choice == 4) { //
 
 		final_bin_count = 0;
-		double max_p = P[block_data[block_index].bin_indexs_[0]];
-		for (int i = 1; i < block_data[block_index].bin_num_; i++) {
-			int real_index = block_data[block_index].bin_indexs_[i];
+		double max_p = P[block_data[relative_block_index].bin_indexs_[0]];
+		for (int i = 1; i < block_data[relative_block_index].bin_num_; i++) {
+			int real_index = block_data[relative_block_index].bin_indexs_[i];
 			if (P[real_index] > max_p) {
 				max_p = P[real_index];
 				final_bin_count = i;
@@ -380,11 +461,11 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 		}
 
 		curandState state;
-		curand_init(calc_index, 10, 0, &state);
+		curand_init(result_calc, 10, 0, &state);
 		for (int i = 0; i < 100; i++) {
-			int sample_x = curand_uniform(&state) * block_data[block_index].bin_num_;
+			int sample_x = curand_uniform(&state) * block_data[relative_block_index].bin_num_;
 			double sample_y = curand_uniform(&state) * max_p;
-			int real_index = block_data[block_index].bin_indexs_[sample_x];
+			int real_index = block_data[relative_block_index].bin_indexs_[sample_x];
 			if (sample_y <= P[real_index]) {
 				final_bin_count = sample_x;
 				break;
@@ -405,7 +486,8 @@ void sgmmRestoreVoxel(unsigned char * raw_result, int width, int depth, int heig
 		//if (block_data[block_index].bin_indexs_[final_bin_count] == 0) {
 		//	printf("%d %d\n", block_index, block_data[block_index].bin_indexs_[final_bin_count]);
 		//}
-		raw_result[calc_index] = block_data[block_index].bin_indexs_[final_bin_count] * (256 / bin_num) + 1;
+
+		raw_result[result_calc] = block_data[relative_block_index].bin_indexs_[final_bin_count] * (256 / bin_num) + 1;
 		//if (raw_result[calc_index] == 1 && block_index == 0) {
 		//	printf("%d %d %d %d\n", block_index, block_data[block_index].bin_indexs_[final_bin_count],final_bin_count,block_data[block_index].bin_num_);
 		//}
@@ -450,6 +532,8 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	int * zero_count;
 	int * calc_count;
 
+	const int process_num = 4;
+
 	std::cout << "----------RESTORE RAW BY SGMM MODULE------------\n";
 	std::cout << "input disk address\n";
 	std::cin >> disk_address;
@@ -481,29 +565,41 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 
 	std::cout << "Part0: Initializing..." << std::endl;
 	unsigned char * raw_result_host = (unsigned char *)malloc(total_size * sizeof(unsigned char));
-	unsigned char * temp_p_host = (unsigned char *)malloc(total_size * sizeof(double));
-	unsigned char * temp_p2_host = (unsigned char *)malloc(total_size * sizeof(double));
+	double * temp_p_host;
+	double * temp_p2_host;
 
+	for (int i = 0; i < total_size; i++) {
+		raw_result_host[i] = 0.0;
+	}
+
+#ifdef  TEMP_P
+	int temp_p_num = block_num;
+	temp_p_host = (double*)malloc(temp_p_num * sizeof(double));
+	for (int i = 0; i < temp_p_num; i++) {
+		temp_p_host[i] = -1;
+	}
+	CUDA_CALL(cudaMalloc(&temp_p, temp_p_num * sizeof(double)));
+	CUDA_CALL(cudaMemcpy(temp_p, temp_p_host, temp_p_num * sizeof(double), cudaMemcpyHostToDevice));
+#endif //  TEMP_P
+#ifdef TEMP_P2
+	int temp_p2_num = block_num;
+	temp_p2_host = (double*)malloc(temp_p2_num * sizeof(double));
+	for (int i = 0; i < temp_p2_num; i++) {
+		temp_p2_host[i] = -1;
+	}
+	CUDA_CALL(cudaMalloc(&temp_p2, temp_p2_num * sizeof(double)));
+	CUDA_CALL(cudaMemcpy(temp_p2, temp_p2_host, temp_p2_num * sizeof(double), cudaMemcpyHostToDevice));
+#endif // TEMP_P2
+
+	
+	
 	CUDA_CALL(cudaMalloc(&raw_src, total_size * sizeof(unsigned char)));
 
 	CUDA_CALL(cudaMalloc(&raw_result, total_size * sizeof(unsigned char)));
 
-	CUDA_CALL(cudaMalloc(&temp_p, total_size * sizeof(double)));
-
-	CUDA_CALL(cudaMalloc(&temp_p2, total_size * sizeof(double)));
-
 	CUDA_CALL(cudaMalloc(&all_block_integrations, block_num * sizeof(sgmmIntegrations)));
 
-
-	for (int i = 0; i < total_size; i++) {
-		raw_result_host[i] = 0.0;
-		temp_p_host[i] = 0.000;
-		temp_p2_host[i] = 0.000;
-	}
-
 	CUDA_CALL(cudaMemcpy(raw_result, raw_result_host, total_size * sizeof(unsigned char), cudaMemcpyHostToDevice));
-	CUDA_CALL(cudaMemcpy(temp_p, temp_p_host, total_size * sizeof(double), cudaMemcpyHostToDevice));
-	CUDA_CALL(cudaMemcpy(temp_p2, temp_p2_host, total_size * sizeof(double), cudaMemcpyHostToDevice));
 
 
 	sgmmIntegrations * all_block_integrations_host = (sgmmIntegrations *)malloc(block_num * sizeof(sgmmIntegrations));
@@ -520,19 +616,24 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 
 	sgmmBlock* block_data;
 	//cudaMallocManaged(&block_data, block_num * sizeof(Block));
+
 	block_data = (sgmmBlock*)malloc(sizeof(sgmmBlock)*block_num);
+
+
 	if (block_data == nullptr) {
 		std::cout << "can not allocate memory for block. ";
 		std::cout << sizeof(sgmmBlock)*block_num / 1024 / 1024 << "m are needed.\n";
 		return 0;
 	}
-	std::cout << sizeof(sgmmBlock)*block_num / 1024 / 1024 << "m are allocated\n";
+	std::cout << sizeof(sgmmBlock)*block_num / 1024 / 1024 << "m are allocated in host\n";
+
 	std::cout << "Part1: Reading SGMMs..." << std::endl;
 	std::ifstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	if (f_sgmm.is_open() == false) {
 		std::cout << "can not open file\n";
 		return 0;
 	}
+
 	for (int block_index = 0; block_index < block_num; block_index++) {
 
 		f_sgmm.read((char*)&(block_data[block_index].bin_num_), sizeof(unsigned char));
@@ -569,11 +670,14 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 		}
 	}
 	f_sgmm.close();
+
 	sgmmBlock * block_data_device;
-	CUDA_CALL(cudaMalloc(&block_data_device, block_num*(sizeof(sgmmBlock))));
-	CUDA_CALL(cudaMemcpy(block_data_device, block_data, block_num*(sizeof(sgmmBlock)), cudaMemcpyHostToDevice));
-	free(block_data);
-	block_data = block_data_device;
+	//分块计算积分
+	int block_num_per_data_block = (block_num+process_num-1) / process_num;
+	CUDA_CALL(cudaMalloc(&block_data_device, block_num_per_data_block*(sizeof(sgmmBlock))));
+	//CUDA_CALL(cudaMemcpy(block_data_device, block_data, block_num*(sizeof(sgmmBlock)), cudaMemcpyHostToDevice));
+	//free(block_data);
+	//block_data = block_data_device;
 
 	// Part2~4: 
 	int numBlocks;
@@ -591,46 +695,86 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 		 * capability of the display card.Please run related CUDA API
 		 *to get the proper size
 		*/
-		numBlocks = (block_num * max_bin_num + blockSize - 1) / blockSize;
-		std::cout << "thread block num:" << numBlocks << " thread block size:" << blockSize << std::endl;
-		start = clock();
-		CalcIntegrationsNumerator <<< numBlocks, blockSize >> > (all_block_integrations, block_data, side, n, block_num, max_bin_num, temp_p, temp_p2);
-		CUDA_CALL(cudaDeviceSynchronize());
+		numBlocks = (block_num_per_data_block * max_bin_num + blockSize - 1) / blockSize;
+		
+		for (int i = 0; i < process_num; i++) {
+
+			start = clock();
+			std::cout << "Calculating process num:" << i << " of " << process_num << std::endl << std::endl;
+			int begin_index = i*block_num_per_data_block;
+			int end_index = ((i + 1)*block_num_per_data_block < block_num ? (i + 1)*block_num_per_data_block : block_num);
+			std::cout << "Copying data block number from "<<begin_index<<" to "<<end_index <<" data block from host to device\n";
+			CUDA_CALL(cudaMemcpy(block_data_device, (&block_data[begin_index]), (end_index-begin_index) * sizeof(sgmmBlock), cudaMemcpyHostToDevice));
+			std::cout << "Copying finished\n";
+			
+
+			CalcIntegrationsNumerator <<< numBlocks, blockSize >> > (all_block_integrations, 
+				block_data_device,
+				i*block_num_per_data_block,			//block index offset
+				side,
+				n,
+				block_num_per_data_block, 
+				max_bin_num,
+				temp_p,
+				temp_p2);
+			CUDA_CALL(cudaDeviceSynchronize());
+			finish = clock();
+			std::cout << "Calculating numerator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+
+
+			int start_index = 0;
+			for (int loop_index = start_index; loop_index < integration_scale * integration_scale * integration_scale; loop_index++) {
+				std::cout << "Calculating block " << loop_index << "..." << std::endl;
+
+				start = clock();
+				CalcIntegrationsDenominator << <numBlocks, blockSize >> > (all_block_integrations,
+					block_data_device,
+					i*block_num_per_data_block,//block index offset
+					side,
+					n,
+					block_num_per_data_block,
+					max_bin_num,
+					loop_index,
+					integration_scale,
+					temp_p,
+					temp_p2);
+				CUDA_CALL(cudaDeviceSynchronize());
+				finish = clock();
+				std::cout << "Calculating denominator time of process " << i << ": " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+			}
+		}
 		finish = clock();
+
+#ifdef TEMP_P
+		CUDA_CALL(cudaMemcpy(temp_p_host, temp_p, sizeof(double)*temp_p_num, cudaMemcpyDeviceToHost));
+		std::ofstream temp_p_file(disk_address + data_source + ".tempp");
+		if (temp_p_file.is_open() == true) {
+			for (int i = 0; i < temp_p_num; i++) {
+				if (temp_p_host[i] >= 0.0)temp_p_file << i << " " << (temp_p_host[i]) << std::endl;
+			}
+		}
+
+#endif
+#ifdef TEMP_P2
+		CUDA_CALL(cudaMemcpy(temp_p2_host, temp_p2, sizeof(double)*temp_p2_num, cudaMemcpyDeviceToHost));
+		std::ofstream temp_p2_file(disk_address + data_source + ".tempp2");
+		if (temp_p2_file.is_open() == true) {
+			for (int i = 0; i < temp_p2_num; i++) {
+				if (temp_p2_host[i] >= 0.0)temp_p2_file << i <<" "<< (temp_p2_host[i]) << std::endl;
+			}
+		}
+#endif
 
 		//////////////////////////////////////////////////////////////////////////
 		///output intermediate result for testing
 		//
-		std::ofstream inter_result("e:/testinfo/numeratorinfo.sgmm", std::ios::binary);
-		if (inter_result.is_open() == true) {
-			CUDA_CALL(cudaMemcpy(all_block_integrations_host, all_block_integrations, block_num*(sizeof(sgmmIntegrations)), cudaMemcpyDeviceToHost));
-			inter_result.write((const char *)all_block_integrations_host, block_num*(sizeof(sgmmIntegrations)));
-		}
+		//std::ofstream inter_result("e:/testinfo/numeratorinfo.sgmm", std::ios::binary);
+		//if (inter_result.is_open() == true) {
+		//	CUDA_CALL(cudaMemcpy(all_block_integrations_host, all_block_integrations, block_num*(sizeof(sgmmIntegrations)), cudaMemcpyDeviceToHost));
+		//	inter_result.write((const char *)all_block_integrations_host, block_num*(sizeof(sgmmIntegrations)));
+		//}
 		//////////////////////////////////////////////////////////////////////////
-
-
-		std::cout << "Calculating numerator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
-
-		int start_index = 0;
-		std::cout << std::endl << "Part3: Calculating integrations denominator..." << std::endl;
-		for (int loop_index = start_index; loop_index < integration_scale * integration_scale * integration_scale; loop_index++) {
-			std::cout << "Calculating block " << loop_index << "..." << std::endl;
-
-			start = clock();
-			CalcIntegrationsDenominator << <numBlocks, blockSize >> > (all_block_integrations, block_data, side, n, block_num, max_bin_num, loop_index, integration_scale, temp_p, temp_p2);
-			CUDA_CALL(cudaDeviceSynchronize());
-			finish = clock();
-
-			CUDA_CALL(cudaMemcpy(all_block_integrations_host, all_block_integrations, block_num*(sizeof(sgmmIntegrations)), cudaMemcpyDeviceToHost));
-
-			std::cout << "Calculating denominator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
-			//////////////////////////////////////////////////////////////////////////
-			//std::ofstream f_temp_integration_out("e:/testinfo/i_" + Int2String(loop_index), std::ios::binary);
-			//f_temp_integration_out.write((char *)all_block_integrations_host, block_num * sizeof(sgmmIntegrations));
-			//f_temp_integration_out.close();
-			//////////////////////////////////////////////////////////////////////////
-			//Mark(Int2String(loop_index));
-		}
+		CUDA_CALL(cudaMemcpy(all_block_integrations_host, all_block_integrations, block_num*(sizeof(sgmmIntegrations)), cudaMemcpyDeviceToHost));
 		// Part4:
 
 		std::cout << std::endl << "Part4: Saving integrations..." << std::endl;
@@ -660,8 +804,19 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	else {
 		exit(1);
 	}
-
+	
 	// Part5: ÖØ¹¹rawÊý¾Ý
+	int * coords_host;
+	int * coords_device;
+#ifdef D_COORD
+	int coords_num = block_num;
+	coords_host = (int*)malloc(sizeof(int)*coords_num * 3);
+	for (int i = 0; i < coords_num * 3; i++) {
+		coords_host[i] = -1;
+	}
+	CUDA_CALL(cudaMalloc(&coords_device, sizeof(int) * 3 * coords_num));
+	CUDA_CALL(cudaMemcpy(coords_device, coords_host, sizeof(int)*coords_num * 3, cudaMemcpyHostToDevice));
+#endif
 
 	std::cout << std::endl << "Part5: Restoring data..." << std::endl;
 	std::cout << std::endl << "Choose a way to restore data, input 1 to sample randomly, 2 to sample by max, 3 to sample by integration, 4 to sample by rejection method." << std::endl;
@@ -671,17 +826,40 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 		std::cout << "Illegal input." << std::endl;
 		exit(1);
 	}
-	numBlocks = (((width / side)*side) * ((depth / side)*side) * ((height / side)*side) + blockSize - 1) / blockSize; //
-	std::cout << "thread block num:" << numBlocks << " thread block size:" << blockSize << std::endl;
 
+	//以体素为单位
+	long voxel_count = block_num_per_data_block*side*side*side;
+	numBlocks = (voxel_count+ blockSize - 1) / blockSize;
+	//numBlocks = (((width / side)*side) * ((depth / side)*side) * ((height / side)*side) + blockSize - 1) / blockSize; //
 	start = clock();
-	sgmmRestoreVoxel<<<numBlocks, blockSize >>>(raw_result, width, depth, height,
-		side, n, max_bin_num, block_data,
-		temp_p, temp_p2, all_block_integrations, sample_choice);
-	CUDA_CALL(cudaDeviceSynchronize());
-	finish = clock();
+	for (int i = 0; i < process_num; i++) {
+		std::cout << "Restoring process num:" << i << " of " << process_num << std::endl;
+		int begin_index = i*block_num_per_data_block;
+		int end_index = ((i + 1)*block_num_per_data_block < block_num ? (i + 1)*block_num_per_data_block : block_num);
 
+		std::cout << "Copying data block number from " << begin_index<< " to " << end_index<< " data block from host to device\n";
+		CUDA_CALL(cudaMemcpy(block_data_device, &block_data[begin_index], (end_index-begin_index)* sizeof(sgmmBlock), cudaMemcpyHostToDevice));
+		std::cout << "Copying finished\n";
+		sgmmRestoreVoxel << <numBlocks, blockSize >> > (raw_result, width, depth, height,
+			side, n, max_bin_num, block_data_device,i*block_num_per_data_block,
+			i*voxel_count,voxel_count,
+			temp_p, temp_p2, all_block_integrations, sample_choice,coords_device);
+		CUDA_CALL(cudaDeviceSynchronize());
+	}
+	finish = clock();
+	//std::cout << "thread block num:" << numBlocks << " thread block size:" << blockSize << std::endl;
 	std::cout << "Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+
+#ifdef D_COORD
+	CUDA_CALL(cudaMemcpy(coords_host, coords_device, sizeof(int) * 3 * coords_num, cudaMemcpyDeviceToHost));
+	std::ofstream coord_file(disk_address + data_source + ".coord");
+	if (coord_file.is_open() == true) {
+		for (int i = 0; i < coords_num; i++) {
+			coord_file << coords_host[i * 3] << " " << coords_host[i * 3 + 1] << " " << coords_host[i * 3 + 2] << std::endl;
+		}
+	}
+#endif
+
 	//Test code Begin
 	//while (true) {
 	//	int index;
@@ -706,9 +884,21 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	create_vifo_file(disk_address, disk_address+"_restored_sgmm", width, depth, height);
 
 	CUDA_CALL(cudaFree(raw_result));
+#ifdef TEMP_P
 	CUDA_CALL(cudaFree(temp_p));
+	free(temp_p_host);
+#endif
+#ifdef TEMP_P2
 	CUDA_CALL(cudaFree(temp_p2));
-	CUDA_CALL(cudaFree(block_data));
+	free(temp_p2_host);
+#endif
+
+#ifdef D_COORD
+	free(coords_host);
+	CUDA_CALL(cudaFree(coords_device));
+#endif
+	CUDA_CALL(cudaFree(block_data_device));
+	free(block_data);
 
 	//
 	std::cin.get();
