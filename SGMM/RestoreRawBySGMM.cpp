@@ -526,6 +526,7 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 		std::cout << sizeof(sgmmBlock)*block_num / 1024 / 1024 << "m are needed.\n";
 		return 0;
 	}
+	std::cout << sizeof(sgmmBlock)*block_num / 1024 / 1024 << "m are allocated\n";
 	std::cout << "Part1: Reading SGMMs..." << std::endl;
 	std::ifstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	if (f_sgmm.is_open() == false) {

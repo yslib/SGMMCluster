@@ -103,7 +103,7 @@ public:
 };
 
 //information entropy criterion
-
+const int EVENT_NUM = 128;
 struct entropy {
 private:
 	double threshold;
@@ -125,14 +125,14 @@ public:
 		auto zmax = root->max_data_point.z;
 		//std::cout << zmax << std::endl;
 		double ent = 0.0;
-		int count[256];
-		std::memset(count, 0, sizeof(int) * 256);
+		int count[EVENT_NUM];
+		std::memset(count, 0, sizeof(int) * EVENT_NUM);
 		int total = (xmax - xmin)*(ymax - ymin)*(zmax - zmin);
 		for (auto z = zmin; z < zmax; z++) {
 			for (auto y = ymin; y < ymax; y++) {
 				for (auto x = xmin; x < xmax; x++) {
 					int index = x + y*data_width + z*data_width*data_depth;
-					count[(unsigned char)vol[index]]++;
+					count[(unsigned char)vol[index]/2]++;
 				}
 			}
 		}
@@ -146,7 +146,7 @@ public:
 		//		}
 		//	}
 		//}
-		for (int i = 0; i < 256; i++) {
+		for (int i = 0; i < EVENT_NUM; i++) {
 			if (count[i] != 0) {
 				double prob = static_cast<double>(count[i]) / total;
 				double logprob = std::log(prob) / std::log(2);
@@ -546,6 +546,7 @@ void extend_regular_octree(octree_node * root, int current_height, int max_heigh
 	}
 }
 
+//Delete octree
 void destroy_octree(octree_node * root) {
 	if (root == nullptr)return;
 	if (is_leaf(root) == true) {
@@ -706,6 +707,7 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 	std::cout << "max entropy:" << max_ent << "\n" << "min entropy:" << min_ent << std::endl;
 	std::cout << total_size << " " << data_count << std::endl;
 	out_file.close();
+	std::cout << "Bounding box file output finished\n";
 	std::ofstream out_table_file(path + file_name + ".reidt");
 	if (out_table_file.is_open() == false) {
 		return false;

@@ -200,7 +200,17 @@ double CalcSGMM(double* local_pos, int gauss_count, sgmmClusterBlock* block_data
 //	all_block_integrations[block_index].integration_numerator[cluster_index] = numerator;
 //}
 __global__
-void CalcIntegrationsNumerator(sgmmClusterIntegrations* all_block_integrations, sgmmClusterBlock* block_data, int n, int block_num, int max_cluster_num, double * temp_p, double * temp_p2, Point3d * debug_points1_device, Point3d * debug_points2_device, Point3d * min_points, Point3d * max_points) {
+void CalcIntegrationsNumerator(sgmmClusterIntegrations* all_block_integrations,
+	sgmmClusterBlock* block_data,
+	int n,
+	int block_num, 
+	int max_cluster_num,
+	double * temp_p, 
+	double * temp_p2, 
+	Point3d * debug_points1_device, 
+	Point3d * debug_points2_device, 
+	Point3d * min_points, 
+	Point3d * max_points) {
 	double offset = 0.000;
 	long calc_index = blockIdx.x * blockDim.x + threadIdx.x; //计算单元的索引
 	if (calc_index >= block_num * max_cluster_num) return;
@@ -211,8 +221,8 @@ void CalcIntegrationsNumerator(sgmmClusterIntegrations* all_block_integrations, 
 	int cluster_index = calc_index - block_index * max_cluster_num;
 	//printf("%d ", block_index);
 
-	debug_points1_device[block_index] = min_points[block_index];
-	debug_points2_device[block_index] = max_points[block_index];
+	//debug_points1_device[block_index] = min_points[block_index];
+	//debug_points2_device[block_index] = max_points[block_index];
 
 	if (cluster_index >= block_data[block_index].cluster_num_) {
 		//printf("a %d %d %d \n", block_index, block_data[block_index].cluster_num_, cluster_index);
@@ -323,79 +333,20 @@ void MonteCarloIntegrations(sgmmClusterIntegrations* all_block_integrations,
 }
 
 
-// 计算block_index块内cluster_index这个cluster的sgmm在块内的积分的分母部分
-//__global__
-//void CalcIntegrationsDenominator(Integrations* all_block_integrations, Block* block_data,int side, int n, int block_num, int max_cluster_num, int loop_index, int integration_scale, double * temp_p, double * temp_p2) {
-//	
-//	double offset = 0.000;
-//	long calc_index = blockIdx.x * blockDim.x + threadIdx.x; //计算单元的索引
-//	if (calc_index >= block_num * max_cluster_num) return;
-//
-//
-//	(1)
-//	int block_index = calc_index / max_cluster_num;
-//	int cluster_index = calc_index - block_index * max_cluster_num;
-//
-//	if (cluster_index >= block_data[block_index].cluster_num_) {
-//		return;
-//	}
-//
-//	int z_index = loop_index / (integration_scale*integration_scale);
-//	int y_index = (loop_index - z_index * (integration_scale*integration_scale)) / integration_scale;
-//	int x_index = loop_index - z_index * (integration_scale*integration_scale) - y_index * integration_scale;
-//
-//	if (block_data[block_index].clusters_[cluster_index].gauss_count_ == 0) {
-//		all_block_integrations[block_index].integration_denominator[cluster_index] += 0.0;
-//		if (loop_index == integration_scale * integration_scale * integration_scale - 1) {
-//			if (all_block_integrations[block_index].integration_denominator[cluster_index] == 0) {
-//				all_block_integrations[block_index].integration_value[cluster_index] = 0.0;
-//			}
-//			else {
-//				all_block_integrations[block_index].integration_value[cluster_index] = all_block_integrations[block_index].integration_numerator[cluster_index] / all_block_integrations[block_index].integration_denominator[cluster_index];
-//			}
-//		}
-//		return;
-//	}
-//
-//	double denominator = 0.0;
-//	for (int z = (-1 + z_index) * side; z < (0 + z_index) * side; z++) {
-//		for (int y = (-1 + y_index) * side; y < (0 + y_index) * side; y++) {
-//			for (int x = (-1 + x_index) * side; x < (0 + x_index) * side; x++) {
-//				double local_pos[3] = { x + offset,y + offset,z + offset };
-//				int gauss_count = block_data[block_index].clusters_[cluster_index].gauss_count_;
-//				double sgmm = CalcSGMM(local_pos, gauss_count, block_data, block_index, cluster_index, n);
-//				denominator += sgmm;
-//			}
-//		}
-//	}
-//
-//	if (denominator == 0) {
-//		all_block_integrations[block_index].integration_denominator[cluster_index] += 0.0;
-//		if (loop_index == integration_scale*integration_scale*integration_scale - 1) {
-//			if (all_block_integrations[block_index].integration_denominator[cluster_index] == 0) {
-//				all_block_integrations[block_index].integration_value[cluster_index] = 0.0;
-//			}
-//			else {
-//				all_block_integrations[block_index].integration_value[cluster_index] = all_block_integrations[block_index].integration_numerator[cluster_index] / all_block_integrations[block_index].integration_denominator[cluster_index];
-//			}
-//		}
-//		return;
-//	}
-//	else {
-//		all_block_integrations[block_index].integration_denominator[cluster_index] += denominator;
-//		if (loop_index == integration_scale*integration_scale*integration_scale - 1) {
-//			if (all_block_integrations[block_index].integration_denominator[cluster_index] == 0) {
-//				all_block_integrations[block_index].integration_value[cluster_index] = 0.0;
-//			}
-//			else {
-//				all_block_integrations[block_index].integration_value[cluster_index] = all_block_integrations[block_index].integration_numerator[cluster_index] / all_block_integrations[block_index].integration_denominator[cluster_index];
-//			}
-//		}
-//		return;
-//	}
-//}
 __global__
-void CalcIntegrationsDenominator(sgmmClusterIntegrations* all_block_integrations, sgmmClusterBlock* block_data, int n, int block_num, int max_cluster_num, int loop_index, int integration_scale, double * temp_p, double * temp_p2, Point3d* debug_points1_device, Point3d * debug_points2_device, Point3d * min_points, Point3d * max_points) {
+void CalcIntegrationsDenominator(sgmmClusterIntegrations* all_block_integrations,
+	sgmmClusterBlock* block_data,
+	int n, 
+	int block_num, 
+	int max_cluster_num, 
+	int loop_index, 
+	int integration_scale,
+	double * temp_p,
+	double * temp_p2, 
+	Point3d* debug_points1_device,
+	Point3d * debug_points2_device,
+	Point3d * min_points, 
+	Point3d * max_points) {
 
 	double offset = 0.000;
 	long calc_index = blockIdx.x * blockDim.x + threadIdx.x; //计算单元的索引
@@ -860,8 +811,8 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 
 
 #if defined(DEBUG_RESTOREVOXEL_KERNEL)||defined(DEBUG_DENOMINATOR_KERNEL)||defined(DEBUG_NUMERATOR_KERNEL)
-	Point3d * debug_point1_host = new Point3d[block_num];
-	Point3d * debug_point2_host = new Point3d[block_num];
+	Point3d *debug_point1_host = new Point3d[block_num];
+	Point3d *debug_point2_host = new Point3d[block_num];
 	debug_block_info * debug_block_info_host = new debug_block_info[block_num];
 	debug_block_info * debug_block_info_device;
 	for (int i = 0; i < block_num; i++) {
@@ -950,6 +901,9 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 	CUDA_CALL(cudaMemcpy(id_table_device, id_table, sizeof(id_type)*total_size, cudaMemcpyHostToDevice));
 	delete[] id_table;
 
+
+	const int process_count = 4;
+
 	// Part3~5: 获取SGMM的积分
 	int numBlocks;
 	clock_t start, finish;
@@ -963,7 +917,6 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 		std::cout << std::endl << "Part2: Calculating integrations numerator..." << std::endl;
 		numBlocks = (block_num * MAX_CLUSTER_NUM + blockSize - 1) / blockSize;
 		start = clock();
-
 
 
 #ifdef MONTE_CARLO
@@ -981,7 +934,7 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 			max_points_device);;
 #else
 
-		CalcIntegrationsNumerator << < numBlocks, blockSize >> > (all_block_integrations,
+		CalcIntegrationsNumerator <<< numBlocks, blockSize >>> (all_block_integrations,
 			block_data,
 			n,
 			block_num,
@@ -1005,7 +958,6 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 #ifndef MONTE_CARLO
 		std::cout << std::endl << "Part3: Calculating integrations denominator..." << std::endl;
 
-		//// 防卡死措施，从文件读取目前的计算结果
 		int start_index = 0;
 		//std::ifstream f_temp_integration_in("d:/i_" + Int2String(start_index-1), std::ios::binary);
 		//f_temp_integration_in.read((char *)all_block_integrations, block_num * sizeof(Integrations));
@@ -1055,19 +1007,19 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 			}
 		}
 
-		std::ofstream integration_out_text(integration_cluster_address+"_txt");
-		std::cout << "Wrting integraion file as text format\n";
-		if (integration_out_text.is_open() == true) {
-			for (int i = 0; i < block_num; i++) {
-				integration_out_text << "------------block num:" << i << std::endl;
-				for (int j = 0; j < MAX_CLUSTER_NUM; j++) {
-					integration_out_text << all_block_integrations_host[i].integration_value[j] << std::endl;
-				}
-			}
-		}
-		else {
-			std::cout << "can not create text file for integrations\n";
-		}
+		//std::ofstream integration_out_text(integration_cluster_address+"_txt");
+		//std::cout << "Wrting integraion file as text format\n";
+		//if (integration_out_text.is_open() == true) {
+		//	for (int i = 0; i < block_num; i++) {
+		//		integration_out_text << "------------block num:" << i << std::endl;
+		//		for (int j = 0; j < MAX_CLUSTER_NUM; j++) {
+		//			integration_out_text << all_block_integrations_host[i].integration_value[j] << std::endl;
+		//		}
+		//	}
+		//}
+		//else {
+		//	std::cout << "can not create text file for integrations\n";
+		//}
 
 	}
 	else if (read_from == 2) {
