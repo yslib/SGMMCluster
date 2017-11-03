@@ -615,6 +615,7 @@ static void RestoreVoxel(unsigned char * raw_result,
 		sgmmbi_l[i] = 0.0;
 		P[i] = 0.0;
 	}
+	//P is posterior
 
 	for (int cluster_index = 0; cluster_index < block_data[block_index].cluster_num_; cluster_index++) {
 		//如果cluster的probability为0，则sgmmbi_i[i]为0，直接跳过
@@ -678,25 +679,32 @@ static void RestoreVoxel(unsigned char * raw_result,
 		}
 	}
 	else if (sample_choice == 4) { // 方法四：蒙特卡洛拒绝采样
+		int cluster_num = block_data[block_index].cluster_num_;
 		double max_p = P[0];
-		final_cluster_index = 0;
-		for (int i = 1; i < block_data[block_index].cluster_num_; i++) {
+		int current_cluster_index = 0;
+		for (int i = 1; i < cluster_num; i++) {
 			if (P[i] > max_p) {
 				max_p = P[i];
-				final_cluster_index = i;
 			}
 		}
 
 		curandState state;
 		curand_init(calc_index, 10, 0, &state);
-		for (int i = 0; i < 100; i++) {
-			int sample_x = curand_uniform(&state) * block_data[block_index].cluster_num_;
-			double sample_y = curand_uniform(&state) * max_p;
-			if (sample_y <= P[sample_x]) {
-				final_cluster_index = sample_x;
-				break;
+		const int sample_counts = 1;
+		int sum_index = 0;
+		for (int s = 0; s < sample_counts; s++) {
+			for (int i = 0; i < 100; i++) {
+				int sample_x = curand_uniform(&state) *cluster_num;
+				double sample_y = curand_uniform(&state) * max_p;
+				if (sample_y <= P[sample_x]) {
+					current_cluster_index = sample_x;
+					break;
+				}
 			}
+			sum_index+= current_cluster_index;
 		}
+		final_cluster_index = sum_index / sample_counts;
+		if (final_cluster_index >= cluster_num)final_cluster_index = cluster_num - 1;
 	}
 
 	if (sample_choice != 3) {
