@@ -30,7 +30,13 @@ int train_sgmm(int gc, char ** argv) {
 	clock_t tbegin = clock();
 	system(cmd.c_str());
 	clock_t tend = clock();
-	std::cout << "Trainning time:" << (tend - tbegin) / CLOCKS_PER_SEC << "s\n";
+	int t = (tend - tbegin) / CLOCKS_PER_SEC;
+	std::cout << "Trainning time:" << t<< "s\n";
+	std::ofstream time_file(disk_address + file_name + "sgmm" + ".tm");
+	if (time_file.is_open() == true) {
+		time_file << "SGMM Training Time:" << t << std::endl;
+	}
+	time_file.close();
 	std::cin.get();
 	return 0;
 }
@@ -57,7 +63,13 @@ int train_block_gmm(int argc, char **argv) {
 	clock_t tbegin = clock();
 	system(cmd.c_str());
 	clock_t tend = clock();
-	std::cout << "Trainning time:" << (tend - tbegin) / CLOCKS_PER_SEC << "s\n";
+	int t = (tend - tbegin) / CLOCKS_PER_SEC;
+	std::cout << "Trainning time:" << t << "s\n";
+	std::ofstream time_file(disk_address + file_name + "gmm" + ".tm");
+	if (time_file.is_open() == true) {
+		time_file << "GMM Training Time:" << t << std::endl;
+	}
+	time_file.close();
 	std::cin.get();
 	return 0;
 }
@@ -121,7 +133,13 @@ int train_sgmm_cluster_octree(int gc,char **gv)
 	clock_t tbegin = clock();
 	std::system(cmd.c_str());
 	clock_t tend = clock();
-	std::cout << "Trainning time:" << (tend - tbegin) / CLOCKS_PER_SEC << "s\n";
+	int t = (tend - tbegin) / CLOCKS_PER_SEC;
+	std::cout << "Trainning time:" << t << "s\n";
+	std::ofstream time_file(disk_address + file_name + "sgmmcluster" + ".tm");
+	if (time_file.is_open() == true) {
+		time_file << "SGMMCluster Training Time:" << t << std::endl;
+	}
+	time_file.close();
 	std::cin.get();
 	return 0;
 }

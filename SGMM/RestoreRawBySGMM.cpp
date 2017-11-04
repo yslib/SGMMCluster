@@ -326,9 +326,9 @@ void sgmmRestoreVoxel(unsigned char * raw_result,
 	//block index
 
 
-	int height_block_num = width / side;
+	int width_block_num = width / side;
 	int depth_block_num = depth / side;
-	int width_block_num = height / side;
+	int height_block_num = height / side;
 
 	int height_block_index = block_index / (width_block_num*depth_block_num);
 	int depth_block_index = (block_index - height_block_index*width_block_num*depth_block_num)/width_block_num;
@@ -418,6 +418,12 @@ void sgmmRestoreVoxel(unsigned char * raw_result,
 	int result_y = depth_block_index*side + y;
 	int result_z = height_block_index*side + z;
 	int result_calc = result_z*width*depth + result_y*width + result_x;
+
+	//if (result_calc >= width*depth*height) {
+	//	printf("out of range:%d %d %d %d:%d %d %d %d %d %d\n",block_index,result_calc,calc_index_offset,block_index_offset,result_x,result_y,result_z,height_block_index,z,calc_index);
+	//	return;
+	//}
+
 	int	final_bin_count = 0;
 	if (sample_choice == 1) { //
 		curandState state;
