@@ -13,7 +13,7 @@ std::size_t size_of_sgmm_clusters(const std::string & path,const std::string& na
 	std::string sgmm_file = path+ name + "_SGMM_Cluster_Result.sgmm";
 	std::size_t size1 = get_file_size(sgmm_file);
 	std::string integrations_file = path + name + "_integrations_sgmm_cluster";
-	std::size_t size2 = get_file_size(integrations_file);
+	std::size_t size2 = 0;
 
 	//std::size_t size3 = get_file_size(path + name + ".reocex");
 	std::size_t size3 = get_file_size(path + name + ".reocexbin");
@@ -24,7 +24,7 @@ std::size_t size_of_sgmm(const std::string & path,const std::string & name) {
 	std::string sgmm_file = path + name + "_SGMM_Result.sgmm";
 	std::size_t size1 = get_file_size(sgmm_file);
 	std::string integration_file = path + name + "_integrations_sgmm";
-	std::size_t size2 = get_file_size(integration_file);
+	std::size_t size2 = 0;
 	return size1 + size2;
 }
 std::size_t size_of_gmm(const std::string & path,const std::string & name) {

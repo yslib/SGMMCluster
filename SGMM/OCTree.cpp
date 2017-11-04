@@ -963,11 +963,27 @@ int subdivision(int argc, char ** argv) {
 			//Increase the entropy so as to decrese the number of block
 			left_ent = ent_threshold;
 			ent_threshold = (right_ent + ent_threshold) / 2;
+			if (iterations > 30) {
+				ent_threshold += 0.001;
+				if (ent_threshold > right_ent) {
+					ent_threshold = right_ent;
+					break;
+				}
+			}
 		}
 		else {
 			right_ent = ent_threshold;
 			ent_threshold = (left_ent + ent_threshold) / 2;
+			if (iterations > 30) {
+				ent_threshold -= 0.001;
+				if (ent_threshold < left_ent) {
+					ent_threshold = left_ent;
+					break;
+				}
+			}
 		}
+
+		std::cout << "left:"<<left_ent<<" "<<right_ent<<" "<<"Next entropy:" << ent_threshold << std::endl;
 		destroy_octree(root);
 		root = nullptr;
 	}

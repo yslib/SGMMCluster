@@ -61,7 +61,7 @@ int create_AABB_file(int argc, char ** argv) {
 	std::cin >> disk_address;
 	std::cout << "input aabb file\n";
 	std::cin >> aabb_file;
-	std::cout << "input width depth height (3)\n";
+	std::cout << "input width depth height side(3)\n";
 	std::cin >> width >> depth >> height >> side;
 
 	if (create_AABB_file(disk_address, aabb_file, create_regular_boundingbox(width, depth, height, side, side, side)) == false) {
