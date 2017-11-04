@@ -193,11 +193,21 @@ int txt2binarysgmm(int argc,char ** argv)
 	for (int i = 0; i < block_num; i++) {
 		total_count += block_data[i].gauss_count_;
 	}
+
 	std::cout << "the maximum size of a block:" << sizeof(sgmmBlock) << std::endl;
-	std::cout << "average gauss count for every block = " << total_count / block_num << std::endl;
-	std::cout << "total gauss count :" << total_gauss_count << std::endl;
-	std::cout << "total bin count:" << total_bin_count << std::endl;
-	std::cout << "Bins per Blocks:" << total_bin_count / block_num << std::endl;
+	std::ofstream sgmm_info(disk_address + data_source + "_sgmm_info.txt");
+	std::cout << "Block in total:" << block_num << std::endl;
+	std::cout << "total gauss count in total :" << total_gauss_count << std::endl;
+	std::cout << "total bin count in total:" << total_bin_count << std::endl;
+	std::cout << "Gauss count per block:" << total_count / block_num << std::endl;
+	std::cout << "Bins per block:" << total_bin_count / block_num << std::endl;
+	sgmm_info << "Block in total:" << block_num << std::endl;
+	sgmm_info << "total gauss count in total :" << total_gauss_count << std::endl;
+	sgmm_info << "total bin count in total:" << total_bin_count << std::endl;
+	sgmm_info << "Gauss count per block:" << total_count / block_num << std::endl;
+	sgmm_info << "Bins per block:" << total_bin_count / block_num << std::endl;
+	sgmm_info.close();
+
 	// Part2: writing as binary file
 	int total_footprint = 0;
 	std::ofstream f_sgmm(sgmm_binary_address, std::ios::binary);

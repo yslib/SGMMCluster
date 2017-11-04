@@ -185,18 +185,26 @@ int txt2binarySGMMCluster(int argc,char ** argv) {
 		return 0;
 	}
 	//
+	std::ofstream sgmmcluster_info(disk_address + data_source + "_sgmmclsuter_info.txt");
+
 	std::cout << "block in total:" << count << std::endl;
 	std::cout << "Gauss count:" << total_gauss_count << std::endl;
 	std::cout << "Cluster Count:" << total_cluster_count << std::endl;
 	std::cout << "average gauss count per block:" << total_gauss_count / count << std::endl;
 	std::cout << "average cluster count per block:" << total_cluster_count / count << std::endl;
+	sgmmcluster_info << "block in total:" << count << std::endl;
+	sgmmcluster_info << "Gauss count:" << total_gauss_count << std::endl;
+	sgmmcluster_info << "Cluster Count:" << total_cluster_count << std::endl;
+	sgmmcluster_info << "average gauss count per block:" << total_gauss_count / count << std::endl;
+	sgmmcluster_info << "average cluster count per block:" << total_cluster_count / count << std::endl;
+
 	if(total_cluster_count != 0) std::cout << "average gauss count per cluster:" << total_gauss_count / total_cluster_count << std::endl;
 
 	// Part2: Save as binary file
 	std::ofstream f_sgmm(sgmm_binary_address, std::ios::binary);
 	for (int block_index = 0; block_index < block_num; block_index++) {
 		//std::cout << block_index << std::endl;
-		assert(block_data[block_index].cluster_num <= 10);
+		//assert(block_data[block_index].cluster_num <= 12);
 		f_sgmm.write((char*)&(block_data[block_index].cluster_num), sizeof(unsigned char));
 		for (int cluster_index = 0; cluster_index < block_data[block_index].cluster_num; cluster_index++) {
 			f_sgmm.write((char*)&(block_data[block_index].clusters_[cluster_index].probability_), sizeof(float));

@@ -90,9 +90,13 @@ int txt2binarygmm(int argc,char ** argv)
 		std::cout << "No Block\n";
 		return 0;
 	}
+	std::ofstream sgmm_res(disk_address + data_source + "_gmm_info.txt");
 	std::cout << "block in total:" << count << std::endl;
 	std::cout << "gauss in total:" << total_gauss_count << std::endl;
 	std::cout << "average gauss per block:" << total_gauss_count / count << std::endl;
+	sgmm_res<< "block in total:" << count << std::endl
+		<<"gauss in total:" << total_gauss_count << std::endl
+		<< "average gauss per block:" << total_gauss_count / count << std::endl;
 	// Part2:
 	std::ofstream f_gmm(gmm_binary_address, std::ios::binary);
 	for (int block_index = 0; block_index < block_num; block_index++) {

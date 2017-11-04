@@ -685,6 +685,8 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	//free(block_data);
 	//block_data = block_data_device;
 
+	std::ofstream time_consume(disk_address + data_source + "_SGMMRESTORETIME.txt");
+
 	// Part2~4: 
 	int numBlocks;
 	clock_t start, finish;
@@ -702,7 +704,7 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 		 *to get the proper size
 		*/
 		numBlocks = (block_num_per_data_block * max_bin_num + blockSize - 1) / blockSize;
-		
+		unsigned total_time = 0;
 		for (int i = 0; i < process_num; i++) {
 
 			start = clock();
@@ -726,7 +728,7 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 			CUDA_CALL(cudaDeviceSynchronize());
 			finish = clock();
 			std::cout << "Calculating numerator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
-
+			total_time += finish - start;
 
 			int start_index = 0;
 			for (int loop_index = start_index; loop_index < integration_scale * integration_scale * integration_scale; loop_index++) {
@@ -747,9 +749,10 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 				CUDA_CALL(cudaDeviceSynchronize());
 				finish = clock();
 				std::cout << "Calculating denominator time of process " << i << ": " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+				total_time += (finish - start);
 			}
 		}
-		finish = clock();
+		time_consume << "Calculate integration time consuming:" << total_time / CLOCKS_PER_SEC<<"s." << std::endl;
 
 #ifdef TEMP_P
 		CUDA_CALL(cudaMemcpy(temp_p_host, temp_p, sizeof(double)*temp_p_num, cudaMemcpyDeviceToHost));
@@ -846,7 +849,7 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 		std::cout << "Copying data block number from " << begin_index<< " to " << end_index<< " data block from host to device\n";
 		CUDA_CALL(cudaMemcpy(block_data_device, &block_data[begin_index], (end_index-begin_index)* sizeof(sgmmBlock), cudaMemcpyHostToDevice));
 		std::cout << "Copying finished\n";
-		sgmmRestoreVoxel << <numBlocks, blockSize >> > (raw_result, width, depth, height,
+		sgmmRestoreVoxel <<<numBlocks, blockSize >> > (raw_result, width, depth, height,
 			side, n, max_bin_num, block_data_device,i*block_num_per_data_block,
 			i*voxel_count,voxel_count,
 			temp_p, temp_p2, all_block_integrations, sample_choice,coords_device);
@@ -855,7 +858,8 @@ int restore_raw_by_sgmm(int argc, char ** argv)
 	finish = clock();
 	//std::cout << "thread block num:" << numBlocks << " thread block size:" << blockSize << std::endl;
 	std::cout << "Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
-
+	time_consume<<"Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl; 
+	time_consume.close();
 #ifdef D_COORD
 	CUDA_CALL(cudaMemcpy(coords_host, coords_device, sizeof(int) * 3 * coords_num, cudaMemcpyDeviceToHost));
 	std::ofstream coord_file(disk_address + data_source + ".coord");

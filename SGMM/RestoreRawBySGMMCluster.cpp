@@ -912,6 +912,9 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 
 	const int process_count = 4;
 
+	std::ofstream time_consume(disk_address + data_source + "_SGMMClusterRESOTREtime.txt");
+	
+
 	// Part3~5: 获取SGMM的积分
 	int numBlocks;
 	clock_t start, finish;
@@ -959,7 +962,8 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 
 		finish = clock();
 		std::cout << "Calculating numerator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
-
+		
+		time_consume << "Calculating numerator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
 
 		// Part3: 计算所有block内的每一个cluster的sgmm在块内的积分的分母部分,需要计算integration_scale*integration_scale*integration_scale个小块
 
@@ -972,9 +976,9 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 		//f_temp_integration_in.close();
 
 
+			start = clock();
 		for (int loop_index = start_index; loop_index < integration_scale*integration_scale*integration_scale; loop_index++) {
 			std::cout << "Calculating block " << loop_index << "..." << std::endl;
-			start = clock();
 			CalcIntegrationsDenominator << < numBlocks, blockSize >> > (all_block_integrations, block_data,
 				n,
 				block_num,
@@ -988,8 +992,6 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 				min_points_device,
 				max_points_device);
 			CUDA_CALL(cudaDeviceSynchronize());
-			finish = clock();
-			std::cout << "Calculating denominator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
 
 			// 防卡死措施，存储目前的计算结果到文件中
 			//Sleep(1000);
@@ -1004,6 +1006,9 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 		}
 #endif
 
+			finish = clock();
+			std::cout << "Calculating denominator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+			time_consume << "Calculating  denominator time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
 
 		// Part4: 存储积分到一个单独的文件
 		std::cout << std::endl << "Part4: Saving integrations..." << std::endl;
@@ -1081,8 +1086,8 @@ int restoreRawBySGMMCluster(int argc, char ** argv)
 	CUDA_CALL(cudaDeviceSynchronize());
 	finish = clock();
 	std::cout << "Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
-
-
+	time_consume<< "Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl; 
+	time_consume.close();
 	//Test code Begin
 	//while (true) {
 	//	int index;

@@ -7,6 +7,7 @@
 #include <exception>
 #include "commands.h"
 #include "funcs.h"
+#include <ctime>
 
 #define LEAF_CHECK
 #define LEAF_ID_CONTINUOUS_CHECK
@@ -44,13 +45,13 @@ struct octree_node {
 	point3d max_data_point;
 	point3d min_data_point;
 	double ent;
-	
+
 
 	octree_node(pos_type x, pos_type y, pos_type z, pos_type X, pos_type Y, pos_type Z, bool v = true, id_type i = -1) :
-		min_point{ x, y, z }, max_point{ X, Y, Z }, id{ i }, children{}, parent{}, valid{ v }, min_data_point{ x, y, z }, max_data_point{ X, Y, Z }, ent{0.0}
+		min_point{ x, y, z }, max_point{ X, Y, Z }, id{ i }, children{}, parent{}, valid{ v }, min_data_point{ x, y, z }, max_data_point{ X, Y, Z }, ent{ 0.0 }
 	{}
 	octree_node(pos_type x, pos_type y, pos_type z, pos_type X, pos_type Y, pos_type Z, pos_type d_x, pos_type d_y, pos_type d_z, pos_type d_X, pos_type d_Y, pos_type d_Z, bool v = true, id_type i = -1) :
-		min_point{ x, y, z }, max_point{ X, Y, Z }, min_data_point{ d_x, d_y, d_z }, max_data_point{ d_X, d_Y, d_Z }, id{ i }, children{}, valid{ v }, parent{}, ent{0.0}
+		min_point{ x, y, z }, max_point{ X, Y, Z }, min_data_point{ d_x, d_y, d_z }, max_data_point{ d_X, d_Y, d_Z }, id{ i }, children{}, valid{ v }, parent{}, ent{ 0.0 }
 	{}
 	octree_node(const point3d & start, const point3d & end, id_type i = -1) :
 		octree_node(start.x, start.y, start.z, end.x, end.y, end.z, i)
@@ -116,7 +117,7 @@ public:
 		_width{ width }, _depth{ depth }, _height{ height }, _size{ width*depth*height } {
 	}
 	entropy() = delete;
-	bool operator()(voxel_type * vol,const octree_node * root) {
+	bool operator()(voxel_type * vol, const octree_node * root) {
 		auto xmin = root->min_data_point.x;
 		auto ymin = root->min_data_point.y;
 		auto zmin = root->min_data_point.z;
@@ -132,7 +133,7 @@ public:
 			for (auto y = ymin; y < ymax; y++) {
 				for (auto x = xmin; x < xmax; x++) {
 					int index = x + y*data_width + z*data_width*data_depth;
-					count[(unsigned char)vol[index]/2]++;
+					count[(unsigned char)vol[index] / 2]++;
 				}
 			}
 		}
@@ -155,7 +156,7 @@ public:
 
 		}
 		const_cast<octree_node *>(root)->ent = -ent;
-		std::cout << -ent << std::endl;
+		//std::cout << -ent << std::endl;
 		return (-ent >= threshold);
 	}
 };
@@ -356,9 +357,9 @@ bool read_data(const std::string & file_name, voxel_type * vol, size_t width, si
 		return false;
 	}
 	if (!in_file.read((char *)vol, width*depth*height * sizeof(voxel_type))) {
-		std::cout << "Reading .raw file failed   "<<__LINE__ << std::endl;
+		std::cout << "Reading .raw file failed   " << __LINE__ << std::endl;
 		throw std::out_of_range("Reading .raw file error\n");
-		
+
 	}
 	return true;
 }
@@ -392,7 +393,7 @@ int find_leaves(octree_node * root, std::vector<octree_node *> & result, bool as
 		//Find minimum blocks
 		if ((min_width > root->max_point.x - root->min_point.x)
 			|| (min_depth > root->max_point.y - root->min_point.y)
-			||( min_height > root->max_point.z - root->min_point.z)) {
+			|| (min_height > root->max_point.z - root->min_point.z)) {
 			min_width = root->max_point.x - root->min_point.x;
 			min_depth = root->max_point.y - root->min_point.y;
 			min_height = root->max_point.z - root->min_point.z;
@@ -556,6 +557,48 @@ void destroy_octree(octree_node * root) {
 		for (int i = 0; i < 8; i++) {
 			destroy_octree(root->children[i]);
 		}
+	}
+}
+void min_max_ent(const octree_node *root, double & min_ent, double & max_ent) {
+	if (root == nullptr)return;
+	if (is_leaf(root) == true) {		//leaf node
+		min_ent = std::min(min_ent, root->ent);
+		max_ent = std::max(max_ent, root->ent);
+	}
+	else {
+		for (int i = 0; i < 8; i++) {
+			min_max_ent(root->children[i], min_ent, max_ent);
+		}
+	}
+}
+
+int estimate_sgmmcluster_size(const octree_node * root, const double & min_ent, const double & max_ent) {
+	int cur_size = 0;
+	if (root == nullptr)return cur_size;
+	if (is_leaf(root) == true) {		//叶节点直接估计大小就可以了
+		double delta_ent = (max_ent - min_ent) / (max_cluster_num - min_cluster_num);
+		int cluster_num = (root->ent - min_ent) / delta_ent + min_cluster_num;
+		if (cluster_num > max_cluster_num)
+			cluster_num = max_cluster_num;
+		//estimate a single block size
+		cur_size += sizeof(unsigned char);	//cluster_num
+		cur_size += sizeof(float);			//prior probility
+		cur_size += sizeof(unsigned char); // guass count
+		cur_size += sizeof(float);		//sample value
+
+
+		/*Generally, there are 4 gaussian in a GMM
+		for one gaussion,there are 1- float weight,
+		1-float determinate ,3-float to store mean and
+		6-float covmatrix for 3d gaussian*/
+		cur_size += 4 * (sizeof(float) + sizeof(float) + 3 * sizeof(float) + 6 * sizeof(float));
+		return cluster_num*cur_size;
+	}
+	else {
+		for (int i = 0; i < 8; i++) {
+			cur_size += estimate_sgmmcluster_size(root->children[i], min_ent,max_ent);
+		}
+		return cur_size;
 	}
 }
 
@@ -724,7 +767,7 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 			int cluster_num = (item->ent - min_ent) / delta_ent + min_cluster_num;
 			if (cluster_num > max_cluster_num)
 				cluster_num = max_cluster_num;
-			out_file_cluster_num<< cluster_num << std::endl;
+			out_file_cluster_num << cluster_num << std::endl;
 		}
 	}
 
@@ -740,12 +783,12 @@ bool re_save_leaves_text(const std::string & path, const std::string & file_name
 bool re_save_exleaves_text(const std::string & path,
 	const std::string & file_name,
 	const std::vector<octree_node*> & leaves,
-	pos_type width, 
-	pos_type depth, 
+	pos_type width,
+	pos_type depth,
 	pos_type height,
-	pos_type min_width=0,
-	pos_type min_depth=0,
-	pos_type min_height=0) {
+	pos_type min_width = 0,
+	pos_type min_depth = 0,
+	pos_type min_height = 0) {
 
 	assert(width == ::data_width);
 	assert(depth == ::data_depth);
@@ -789,7 +832,7 @@ bool re_save_exleaves_text(const std::string & path,
 		//		}
 		//	}
 		//}
-		out_file <<item->max_point<<" "<< item->id << std::endl;
+		out_file << item->max_point << " " << item->id << std::endl;
 		/*out_file_bin.write((const char *)&item->min_data_point.x, sizeof(item->min_data_point.x));
 		out_file_bin.write((const char *)&item->min_data_point.y, sizeof(item->min_data_point.y));
 		out_file_bin.write((const char *)&item->min_data_point.z, sizeof(item->min_data_point.z));
@@ -818,6 +861,19 @@ bool re_save_exleaves_text(const std::string & path,
 	//delete[] id_table;
 	return true;
 }
+int count_leaf(const octree_node * root) {
+	if (root == nullptr)return 0;
+	if (is_leaf(root) == true) {
+		return 1;
+	}
+	else {
+		int leaves = 0;
+		for (int i = 0; i < 8; i++) {
+			leaves +=count_leaf(root->children[i]);
+		}
+		return leaves;
+	}
+}
 
 
 int subdivision(int argc, char ** argv) {
@@ -842,7 +898,7 @@ int subdivision(int argc, char ** argv) {
 	data_height = height;
 	data_depth = depth;
 
-	
+
 	//
 	width = next_pow_of_2(width);
 	depth = next_pow_of_2(depth);
@@ -865,29 +921,79 @@ int subdivision(int argc, char ** argv) {
 
 	//OCTree root node
 	octree_node * root = nullptr;
-	
-
-	//a criterion for recursively creating a octree
-	entropy ent(volume_data, width, depth, height, ent_threshold);
-	create_regular_octree(volume_data, root, min_side, ent);
-
-
 	std::vector<octree_node *> leaves;
 	std::vector<octree_node *> extended_octree_leaves;
 
+
+	//a criterion for recursively creating a octree
+	//entropy ent(volume_data, width, depth, height, ent_threshold);
+
+
+	//create_regular_octree(volume_data, root, min_side, ent);
+
+
+
+	//在这里要循环二分搜索看看是不是满足所给大小的条件
+	int eps_size = 1 * 1024 * 1024;
+	double c = 0.1;
+	int cur_size = c*data_width*data_depth*data_height, estimate_size;
+
+	double left_ent = 0.01;
+	double right_ent = 10;
+	ent_threshold = 5;
+	int iterations = 0;
+	std::ofstream time_consume(dir + file_name + "_OCTREETIME.txt");
+	unsigned int begin_time = clock();
+	while (true) {
+		iterations++;
+		entropy ent(volume_data, width, depth, height, ent_threshold);
+		create_regular_octree(volume_data, root, min_side, ent);
+		double min_ent = 999999999;
+		double max_ent = -1;
+		min_max_ent(root, min_ent, max_ent);
+		estimate_size = estimate_sgmmcluster_size(root, min_ent, max_ent);
+		std::cout << "----------\n";
+	    std::wcout << "Estimate size:" << 1.0*estimate_size/1024.0/1024.0 <<"M."<<std::endl;
+		std::cout << "Desired size:" << 1.0*cur_size / 1024.0 / 1024.0 << std::endl;
+		std::cout << "Current Entropy:" << ent_threshold << std::endl;
+		std::cout << "Number of leaf:" << count_leaf(root) << std::endl;
+		if (std::abs(cur_size - estimate_size) < eps_size)//satisfied the expected size
+			break;
+		if (estimate_size - cur_size > eps_size) {
+			//Increase the entropy so as to decrese the number of block
+			left_ent = ent_threshold;
+			ent_threshold = (right_ent + ent_threshold) / 2;
+		}
+		else {
+			right_ent = ent_threshold;
+			ent_threshold = (left_ent + ent_threshold) / 2;
+		}
+		destroy_octree(root);
+		root = nullptr;
+	}
+	unsigned int end_time = std::clock();
+	std::cout << "Parition time:" << 1.0*(end_time - begin_time) / CLOCKS_PER_SEC<<"s." << std::endl;
+	time_consume << "Parition time:" << 1.0*(end_time - begin_time) / CLOCKS_PER_SEC<<"s." << std::endl;
+	time_consume.close();
+	
+	//std::wcout << "Estimate size:" << 1.0*estimate_size/1024.0/1024.0 << std::endl;
+	std::cout << "=====================\n";
+	std::wcout << "Iterations:" << iterations << std::endl;
+	
 	//collect leaves from octree and return the height of the tree
 	int h = find_leaves(root, leaves, true);
-	std::cout << "height:" << h << std::endl;
+	std::cout << "Height of the OCTree:" << h << std::endl;
 
 	//checking the voxel from leaves whether it is equal to the total voxel
 	int voxel_count = 0;
-	std::cout << "leaves:" << leaves.size() << std::endl;
+	std::cout << "Leaves in the OCTree:" << leaves.size() << std::endl;
+
 	for (const auto ptr : leaves) {
 		voxel_count += (ptr->max_data_point.x - ptr->min_data_point.x)*
 			(ptr->max_data_point.y - ptr->min_data_point.y)*
 			(ptr->max_data_point.z - ptr->min_data_point.z);
 	}
-	std::cout << "voxel count:" << voxel_count << std::endl;
+	std::cout << "Voxel:" << voxel_count << std::endl;
 
 	//save .reoc file 
 	re_save_leaves_text(dir, file_name, leaves, data_width, data_depth, data_height);
@@ -933,18 +1039,18 @@ int subdivision(int argc, char ** argv) {
 		if (continuous == false)std::cout << "exleaf node is not continuous\n";
 	}
 #endif
-	std::cout << "number of octree leaf node:" << leaves.size() << std::endl;
-	std::cout << " number of extended octree leaf node:" << extended_octree_leaves.size() << std::endl;
-	
+	std::cout << "Number of octree leaf node:" << leaves.size() << std::endl;
+	std::cout << " Number of extended octree leaf node:" << extended_octree_leaves.size() << std::endl;
+
 	//Save extended octree leaves node for real time rendering
 	std::sort(extended_octree_leaves.begin(), extended_octree_leaves.end(), leaf_cmp);
-	re_save_exleaves_text(dir, file_name, extended_octree_leaves, data_width, data_depth, data_height,min_width,min_depth,min_height);
+	re_save_exleaves_text(dir, file_name, extended_octree_leaves, data_width, data_depth, data_height, min_width, min_depth, min_height);
 	std::cout << "min side:" << min_width << " " << min_depth << " " << min_height << std::endl;
-
-
-
 	std::cin.get();
+
+
 	delete[] volume_data;
 	destroy_octree(root);
+
 	return 0;
 }

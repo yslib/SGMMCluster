@@ -196,7 +196,6 @@ int restore_raw_by_gmm(int argc, char **argv)
 	f_gmm.close();
 	CUDA_CALL(cudaMemcpy(block_data_device, block_data_host, block_num * sizeof(gmmBlock), cudaMemcpyHostToDevice));
 
-
 	// Part2:
 	std::cout << std::endl << "Part2: Restoring data..." << std::endl;
 	int numBlocks = (total_size + blockSize - 1) / blockSize;
@@ -206,6 +205,9 @@ int restore_raw_by_gmm(int argc, char **argv)
 	CUDA_CALL(cudaDeviceSynchronize());
 	int finish = clock();
 	std::cout << "Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+	std::ofstream time_consume(disk_address + data_source + "_GMMRESTORETIME.txt");
+	time_consume<< "Restoring time: " << 1.0 * (finish - start) / CLOCKS_PER_SEC << "s" << std::endl;
+	time_consume.close();
 	// Part3:
 	std::cout << std::endl << "Part3: Saving raw file..." << std::endl;
 	std::ofstream f_result(result_name, std::ios::binary);
