@@ -147,6 +147,7 @@ public:
 		//		}
 		//	}
 		//}
+
 		for (int i = 0; i < EVENT_NUM; i++) {
 			if (count[i] != 0) {
 				double prob = static_cast<double>(count[i]) / total;
@@ -155,6 +156,9 @@ public:
 			}
 
 		}
+		//normalize
+		ent = ent / std::log(1.0f / 1.0*EVENT_NUM);
+		//ent = ent*(1.0*total / _size);
 		const_cast<octree_node *>(root)->ent = -ent;
 		//std::cout << -ent << std::endl;
 		return (-ent >= threshold);
@@ -934,13 +938,13 @@ int subdivision(int argc, char ** argv) {
 
 
 	//在这里要循环二分搜索看看是不是满足所给大小的条件
-	int eps_size = 1 * 1024 * 1024;
+	int eps_size = 0.5 * 1024 * 1024;
 	double c = 0.1;
 	int cur_size = c*data_width*data_depth*data_height, estimate_size;
 
-	double left_ent = 0.01;
-	double right_ent = 10;
-	ent_threshold = 5;
+	double left_ent = 0.0;
+	double right_ent = 1.0;
+	ent_threshold = 0.5;
 	int iterations = 0;
 	std::ofstream time_consume(dir + file_name + "_OCTREETIME.txt");
 	unsigned int begin_time = clock();
@@ -983,7 +987,7 @@ int subdivision(int argc, char ** argv) {
 			}
 		}
 
-		std::cout << "left:"<<left_ent<<" "<<right_ent<<" "<<"Next entropy:" << ent_threshold << std::endl;
+		std::cout << "left:"<<left_ent<<" right:"<<right_ent<<" "<<"Next entropy:" << ent_threshold << std::endl;
 		destroy_octree(root);
 		root = nullptr;
 	}

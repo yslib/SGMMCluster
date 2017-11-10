@@ -690,7 +690,7 @@ static void RestoreVoxel(unsigned char * raw_result,
 
 		curandState state;
 		curand_init(calc_index, 10, 0, &state);
-		const int sample_counts = 1;
+		const int sample_counts = 10;
 		int sum_index = 0;
 		for (int s = 0; s < sample_counts; s++) {
 			for (int i = 0; i < 100; i++) {
